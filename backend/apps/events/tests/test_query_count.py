@@ -14,9 +14,7 @@ User = get_user_model()
 def test_list_query_count_is_constant_regardless_of_event_count(django_assert_num_queries):
     """select_related("organizer") must keep this at 2 queries (count + page)
     no matter how many events/organizers exist — no per-row N+1 (spec §6/§29)."""
-    organizer = User.objects.create_user(
-        email="alice@example.com", username="alice", password="x"
-    )
+    organizer = User.objects.create_user(email="alice@example.com", username="alice", password="x")
     client = APIClient()
 
     def add_events(n, offset):

@@ -1,7 +1,5 @@
 from django_filters import rest_framework as filters
 
-from apps.registrations.models import EventRegistration
-
 from .models import Event
 
 
@@ -17,11 +15,9 @@ class EventFilter(filters.FilterSet):
         fields = ["location", "date_after", "date_before", "organizer", "registered"]
 
     def filter_registered(self, queryset, name, value):
-        user = self.request.user
         if not value:
             return queryset
-        if not user.is_authenticated:
+        if not self.request.user.is_authenticated:
             return queryset.none()
-        return queryset.filter(
-            id__in=EventRegistration.objects.filter(user=user).values("event_id")
-        )
+        # is_registered is already annotated onto this queryset (D01/D03).
+        return queryset.filter(is_registered=True)

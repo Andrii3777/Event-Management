@@ -1,18 +1,12 @@
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.events.models import Event
+from apps.events.tests.helpers import future
 from apps.registrations.models import EventRegistration
 
 User = get_user_model()
-
-
-def future(days=1):
-    return timezone.now() + timedelta(days=days)
 
 
 class RegisterTests(TestCase):
@@ -38,6 +32,14 @@ class RegisterTests(TestCase):
         response = self.client.post(self.register_url())
         self.assertEqual(response.status_code, 201)
         self.assertTrue(EventRegistration.objects.filter(user=self.user, event=self.event).exists())
+
+    def test_organizer_can_register_for_own_event(self):
+        self.client.force_authenticate(self.organizer)
+        response = self.client.post(self.register_url())
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(
+            EventRegistration.objects.filter(user=self.organizer, event=self.event).exists()
+        )
 
     def test_anonymous_cannot_register(self):
         response = self.client.post(self.register_url())

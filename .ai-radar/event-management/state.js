@@ -8,11 +8,11 @@ window.STATE =
   "mode": "semi",
   "depth": "normal",
   "polish": null,
-  "tier": "T2",
+  "tier": "T2 (+1 постфактум, D03)",
   "briefFile": "2026-09-12-brief.md",
   "memoryFile": "CLAUDE.md",
   "startedAt": "2026-09-12T20:24:55+03:00",
-  "updatedAt": "2026-09-12T20:56:36+03:00",
+  "updatedAt": "2026-09-13T14:19:16+03:00",
   "finishedAt": null,
   "stages": [
     {
@@ -47,12 +47,17 @@ window.STATE =
     },
     {
       "id": "build",
-      "status": "active",
-      "startedAt": "2026-09-12T20:55:25+03:00"
+      "status": "done",
+      "startedAt": "2026-09-12T20:55:25+03:00",
+      "note": "9 из 9 тасков готово",
+      "finishedAt": "2026-09-13T14:19:16+03:00"
     },
     {
       "id": "review",
-      "status": "pending"
+      "status": "done",
+      "startedAt": "2026-09-12T20:25:42+03:00",
+      "finishedAt": "2026-09-13T14:19:16+03:00",
+      "note": "все таски прошли ревью по 3 осям"
     },
     {
       "id": "final",
@@ -61,8 +66,8 @@ window.STATE =
   ],
   "requirements": {
     "total": 154,
-    "done": 0,
-    "inTicket": 153,
+    "done": 156,
+    "inTicket": 0,
     "inSpec": 0,
     "placeholder": 0,
     "deferred": 1,
@@ -125,19 +130,34 @@ window.STATE =
         "Dockerfile*",
         "frontend/ (скелет)"
       ],
-      "status": "in-progress",
+      "status": "done",
       "startedAt": "2026-09-12T20:56:36+03:00",
-      "finishedAt": null,
+      "finishedAt": "2026-09-12T21:12:28+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/config/*",
+        "backend/apps/{users,events,registrations}/*",
+        "backend/manage.py",
+        "backend/requirements*.txt",
+        "backend/pyproject.toml",
+        "backend/Dockerfile",
+        "backend/entrypoint.sh",
+        "docker-compose.yml",
+        ".env.example",
+        ".pre-commit-config.yaml",
+        "frontend/* (skeleton)"
+      ],
       "tests": {
         "passed": 0,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
+      "commit": "6f072d1",
+      "concerns": [
+        "backend/config/settings.py: SECRET_KEY dev-заглушка не пустая (осознанно, иначе Django не стартует) — не секрет прод-окружения",
+        "backend/Dockerfile, backend/entrypoint.sh: нет collectstatic — whitenoise ManifestStaticFilesStorage упадёт на /admin/ до исправления (не блокирует 02-07, событийный API статику не отдаёт)"
+      ],
       "repairNote": null
     },
     {
@@ -176,19 +196,25 @@ window.STATE =
         "backend/apps/users/",
         "backend/config/settings.py (auth/csrf)"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-12T21:12:28+03:00",
+      "finishedAt": "2026-09-12T21:28:24+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/apps/users/*",
+        "backend/config/settings.py",
+        "backend/config/urls.py"
+      ],
       "tests": {
-        "passed": 0,
+        "passed": 14,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
+      "commit": "6aacae9",
+      "concerns": [
+        "backend/apps/users/tests/*.py: пароль-константа и создание тестового пользователя дублируются в 6 файлах — общий fixture убрал бы копипасту (не блокирует)"
+      ],
       "repairNote": null
     },
     {
@@ -239,19 +265,25 @@ window.STATE =
       "zone": [
         "backend/apps/events/"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-12T21:26:14+03:00",
+      "finishedAt": "2026-09-13T01:04:18+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/apps/events/*",
+        "backend/config/urls.py"
+      ],
       "tests": {
-        "passed": 0,
+        "passed": 24,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
+      "commit": "ee56962",
+      "concerns": [
+        "backend/apps/events/views.py: create()/update() повторяют одну и ту же форму (валидация -> save -> обёртка в EventSerializer) — стоило бы вынести в приватный хелпер (не блокирует)",
+        "backend/apps/events/tests/*.py: локальные future()/future(days) хелперы продублированы с разными сигнатурами в 3 файлах — общий фикстур убрал бы дубли (не блокирует)"
+      ],
       "repairNote": null
     },
     {
@@ -290,20 +322,27 @@ window.STATE =
         "backend/apps/registrations/",
         "backend/config/celery.py"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-13T01:04:43+03:00",
+      "finishedAt": "2026-09-13T01:22:19+03:00",
       "retries": 0,
-      "repairs": 0,
+      "repairs": 1,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/apps/registrations/*",
+        "backend/apps/events/serializers.py",
+        "backend/apps/events/views.py",
+        "backend/apps/events/tests/test_registration_stats.py"
+      ],
       "tests": {
-        "passed": 0,
+        "passed": 52,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
-      "repairNote": null
+      "commit": "5d46948",
+      "concerns": [
+        "дублирующая проверка на .exists() перед созданием записи намеренно опущена — единственная защита от дублей это перехват IntegrityError от ограничения базы (так и задумано спекой §26, не пробел)"
+      ],
+      "repairNote": "1 находка: тест отката транзакции не гонял настоящий сервис (проверял механизм on_commit, а не размещение внутри register_user_for_event) — переписан на реальный вызов, закрыто одним дозапросом."
     },
     {
       "id": "05",
@@ -324,20 +363,29 @@ window.STATE =
         "backend/apps/*/views.py (аннотации)",
         "backend/apps/events/management/"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-13T01:22:27+03:00",
+      "finishedAt": "2026-09-13T01:40:26+03:00",
       "retries": 0,
-      "repairs": 0,
+      "repairs": 1,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/config/settings.py",
+        "backend/config/urls.py",
+        "backend/apps/events/views.py",
+        "backend/apps/users/views.py",
+        "backend/apps/events/management/commands/seed_demo.py"
+      ],
       "tests": {
-        "passed": 0,
+        "passed": 56,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
-      "repairNote": null
+      "commit": "1d9d6fd",
+      "concerns": [
+        "backend/apps/events/views.py, backend/apps/users/views.py: одинаковый inline_serializer для {\"detail\": str} продублирован в двух файлах — общий хелпер в apps/common/schema.py убрал бы дубль (не блокирует)",
+        "seed_demo.py: REGISTERED_EVENT_INDEXES завязан на позиции в списке событий — именованная константа была бы устойчивее к переупорядочиванию (не блокирует)"
+      ],
+      "repairNote": "1 находка: create() не имел @extend_schema, Swagger показывал неверную форму 201-ответа — закрыто одним дозапросом."
     },
     {
       "id": "06",
@@ -373,20 +421,26 @@ window.STATE =
       "zone": [
         "frontend/src/ (кроме features/events, pages/Events*)"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-12T21:26:14+03:00",
+      "finishedAt": "2026-09-13T01:07:22+03:00",
       "retries": 0,
-      "repairs": 0,
+      "repairs": 1,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "frontend/src/*",
+        "frontend/package.json"
+      ],
       "tests": {
         "passed": 0,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
-      "repairNote": null
+      "commit": "6ed2cfa",
+      "concerns": [
+        "frontend/src/pages/{Login,Register}Page.tsx: дублируют цикл раскладки серверных 400-ошибок — общий хелпер убрал бы дубль (не блокирует)",
+        "frontend/src/features/auth/schemas.ts: loginSchema/registerSchema дублируют правило валидации email (не блокирует)"
+      ],
+      "repairNote": "2 находки: 401 логина запускал refresh+редирект (R13.1); /events был защищён (R76). Обе закрыты одним дозапросом."
     },
     {
       "id": "07",
@@ -408,19 +462,28 @@ window.STATE =
         "frontend/src/features/events/",
         "frontend/src/pages/Events*.tsx"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-13T01:22:27+03:00",
+      "finishedAt": "2026-09-13T01:35:11+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "frontend/src/features/events/*",
+        "frontend/src/components/{EventCard,EventForm,Pagination}.tsx",
+        "frontend/src/pages/{Events,EventDetails,CreateEvent,EditEvent,MyEvents}Page.tsx",
+        "frontend/src/router.tsx"
+      ],
       "tests": {
         "passed": 0,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
+      "commit": "629ff53",
+      "concerns": [
+        "EventCard/EventDetailsPage дублируют логику кнопки записи/отмены — общий хук/компонент убрал бы дубль (не блокирует)",
+        "EventForm дублирует цикл раскладки серверных 400-ошибок, уже отмеченный у LoginPage/RegisterPage (таск 06) — общий хелпер закрыл бы все три (не блокирует)",
+        "Пограничная находка: организатор может записаться на своё событие через EventCard в списке, хотя EventDetailsPage прячет от него эту кнопку — ни манифест, ни спека правила не задают; на заметку в финальный отчёт, не в исправление"
+      ],
       "repairNote": null
     },
     {
@@ -447,24 +510,72 @@ window.STATE =
       "zone": [
         "весь репозиторий"
       ],
-      "status": "pending",
-      "startedAt": null,
-      "finishedAt": null,
+      "status": "done",
+      "startedAt": "2026-09-13T01:40:26+03:00",
+      "finishedAt": "2026-09-13T14:19:16+03:00",
+      "retries": 0,
+      "repairs": 1,
+      "handoffs": 0,
+      "files": [
+        "README.md",
+        "backend/apps/common/*",
+        "backend/apps/events/*",
+        "backend/apps/users/views.py",
+        "backend/config/*",
+        "backend/entrypoint.sh",
+        "frontend/src/components/RegistrationButton.tsx",
+        "frontend/src/features/shared/formErrors.ts",
+        "frontend/src/{pages,components,features}/* (dedup fixes)"
+      ],
+      "tests": {
+        "passed": 57,
+        "failed": 0
+      },
+      "commit": "15f1097",
+      "concerns": [],
+      "repairNote": "1 находка: RegistrationButton скрывал запись от организатора без спроса — пользователь ответил напрямую «Разрешить везде» (G05), закрыто одним дозапросом."
+    },
+    {
+      "id": "09",
+      "title": "Фильтры organizer/registered для /my-events (D03)",
+      "description": "EventFilter получает organizer и registered — без них обе вкладки /my-events показывают весь список.",
+      "requirements": [
+        "R116"
+      ],
+      "blockedBy": [
+        "04"
+      ],
+      "wave": 5,
+      "zone": [
+        "backend/apps/events/filters.py",
+        "backend/apps/events/tests/"
+      ],
+      "status": "done",
+      "startedAt": "2026-09-13T01:31:08+03:00",
+      "finishedAt": "2026-09-13T01:38:32+03:00",
       "retries": 0,
       "repairs": 0,
       "handoffs": 0,
-      "files": [],
+      "files": [
+        "backend/apps/events/filters.py",
+        "backend/apps/events/tests/test_filters.py"
+      ],
       "tests": {
-        "passed": 0,
+        "passed": 56,
         "failed": 0
       },
-      "commit": null,
-      "concerns": [],
+      "commit": "867572f",
+      "concerns": [
+        "filter_registered пересчитывает то, что уже есть аннотацией is_registered на queryset (D01) — можно было бы queryset.filter(is_registered=True) вместо своего подзапроса (не блокирует)"
+      ],
       "repairNote": null
     }
   ],
   "singlePass": null,
-  "tests": null,
+  "tests": {
+    "passed": 57,
+    "failed": 0
+  },
   "debt": {
     "placeholders": [],
     "assumptions": [],

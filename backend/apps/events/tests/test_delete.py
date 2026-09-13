@@ -16,9 +16,7 @@ class DeleteEventTests(TestCase):
         self.organizer = User.objects.create_user(
             email="alice@example.com", username="alice", password="x"
         )
-        self.other = User.objects.create_user(
-            email="bob@example.com", username="bob", password="x"
-        )
+        self.other = User.objects.create_user(email="bob@example.com", username="bob", password="x")
         self.event = Event.objects.create(
             title="Meetup",
             description="desc",

@@ -1,13 +1,36 @@
 # 04 — Записи на события и асинхронная почта
 
 **Требования:** R06, R18, R53, R54, R74, R79, R80, R83, R84, R85, R88, R98, R104, R105, R106,
-R107, R108, R109, R110, R130, R132, R148i
+R107, R108, R109, R110, R130, R132, R148i, R154i
 
 **Blocked by:** 03
 **Зона:** `backend/apps/registrations/`, `backend/config/celery.py` (новый),
-`backend/config/settings.py` (секции Celery/Email)
+`backend/config/settings.py` (секции Celery/Email), **плюс точечно**
+`backend/apps/events/serializers.py` и `backend/apps/events/views.py` — см. D01 ниже
 **Волна:** 4
 **Status:** ready
+
+## D01 — почему этот таск трогает apps/events
+
+Таск 03 вернул `BLOCKED` на двух полях (`registrations_count`, `is_registered`): их нельзя
+аннотировать в `EventSerializer`, пока модель `EventRegistration` не существует — Django не
+регистрирует обратную связь `related_name="registrations"` заранее. Это не ошибка таска 03, это
+порядок, который план не мог предвидеть (см. `spec.md` §6, пометка D01, и `manifest.md`).
+
+Поэтому первым делом здесь: создай `EventRegistration`, затем добавь в
+`apps/events/serializers.py` (`EventSerializer`) и в queryset `apps/events/views.py`
+(`EventViewSet`) ровно то, что описано в §6 спецификации:
+
+```python
+Event.objects.select_related("organizer").annotate(
+    registrations_count=Count("registrations"),
+    is_registered=Exists(EventRegistration.objects.filter(event=OuterRef("pk"), user=request.user)),
+)
+```
+
+Для анонима `is_registered` — константа `False`, без подзапроса. Регрессионный тест на это —
+в `apps/events/tests/`, не в `apps/registrations/tests/` (это тест сериализатора событий, не
+бизнес-логики записи). Не трогай в `apps/events/` больше ничего.
 
 ## Что должно заработать
 
@@ -80,8 +103,10 @@ task; transaction-safe task scheduling.»
 - [ ] `config/celery.py`: `Celery("config")`, `broker_url` из `REDIS_URL`, автозагрузка задач;
       Celery Beat не подключается ни в каком виде
 - [ ] Redis используется только как брокер: ни `CACHES`, ни `cache.set/get` нигде в проекте
+- [ ] `EventSerializer` теперь включает `registrations_count` и `is_registered` (см. D01 выше);
+      тест в `apps/events/tests/` подтверждает: 0 → после записи `1`/`true` → после отмены `0`/
+      `false`; для анонима `is_registered` всегда `false`
 - [ ] Тесты (`apps/registrations/tests/`): успешная запись → 201 · повторная → 409 · запись
       анониму → 401 · запись на прошедшее → 400 · отмена → 204 · отмена без записи → 404 · чужая
       запись недостижима · дубль в обход сервиса → `IntegrityError` · `.delay` вызван с двумя int
-      после коммита · `.delay` не вызван при откате · `registrations_count`/`is_registered` на
-      `Event` меняются после записи и после отмены
+      после коммита · `.delay` не вызван при откате

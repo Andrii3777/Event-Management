@@ -1,19 +1,14 @@
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.events.models import Event
 from apps.registrations.models import EventRegistration
 
+from .helpers import future
+
 User = get_user_model()
 EVENTS_URL = "/api/v1/events/"
-
-
-def future(days):
-    return timezone.now() + timedelta(days=days)
 
 
 class EventFilterTests(TestCase):
@@ -90,9 +85,7 @@ class EventFilterTests(TestCase):
         self.assertEqual(self.titles(response), set())
 
     def test_registered_true_returns_only_events_user_is_registered_for(self):
-        user = User.objects.create_user(
-            email="carol@example.com", username="carol", password="x"
-        )
+        user = User.objects.create_user(email="carol@example.com", username="carol", password="x")
         EventRegistration.objects.create(event=self.django_meetup, user=user)
         self.client.force_authenticate(user=user)
         response = self.client.get(EVENTS_URL, {"registered": "true"})

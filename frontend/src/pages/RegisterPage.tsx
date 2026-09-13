@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isAxiosError } from "axios";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -7,6 +6,7 @@ import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { useRegisterUser } from "../features/auth/hooks";
 import { registerSchema, type RegisterFormValues } from "../features/auth/schemas";
+import { applyServerFieldErrors } from "../features/shared/formErrors";
 
 const FIELDS = ["email", "username", "password"] as const;
 
@@ -25,15 +25,7 @@ export function RegisterPage() {
     registerUser.mutate(values, {
       onSuccess: () => navigate("/login", { replace: true }),
       onError: (error) => {
-        if (isAxiosError(error) && error.response?.status === 400) {
-          const data = error.response.data as Record<string, string[] | undefined>;
-          for (const field of FIELDS) {
-            const message = data[field]?.[0];
-            if (message) {
-              setError(field, { message });
-            }
-          }
-        }
+        applyServerFieldErrors(error, setError, FIELDS);
       },
     });
   });

@@ -10,18 +10,13 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.common.schema import error_detail_serializer
+
 from .cookies import REFRESH_COOKIE_NAME, clear_auth_cookies, set_auth_cookies
 from .serializers import RegisterSerializer, UserSerializer
 
-# Shared shape for every error body this app returns (spec: DRF's own
-# {"detail": ...} format, no envelope) — used only to describe non-2xx
-# responses that automatic schema generation cannot infer.
-_error_response = inline_serializer(
-    name="AuthErrorDetail", fields={"detail": serializers.CharField()}
-)
-_login_response = inline_serializer(
-    name="LoginResponse", fields={"user": UserSerializer()}
-)
+_error_response = error_detail_serializer("AuthErrorDetail")
+_login_response = inline_serializer(name="LoginResponse", fields={"user": UserSerializer()})
 # TokenObtainPairSerializer names its credential field after
 # USERNAME_FIELD (spec G01: "email"), plus the standard "password" field.
 _login_request = inline_serializer(

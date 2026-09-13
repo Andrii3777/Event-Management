@@ -5,16 +5,15 @@ import { Button } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
+import { RegistrationButton } from "../components/RegistrationButton";
 import { useMe } from "../features/auth/hooks";
-import { useCancelRegistration, useDeleteEvent, useEvent, useRegister } from "../features/events/hooks";
+import { useDeleteEvent, useEvent } from "../features/events/hooks";
 
 export function EventDetailsPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const { data: event, isLoading, isError, refetch } = useEvent(id);
   const { data: user } = useMe();
-  const register = useRegister();
-  const cancel = useCancelRegistration();
   const deleteEvent = useDeleteEvent();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -27,8 +26,6 @@ export function EventDetailsPage() {
   }
 
   const isOrganizer = user?.id === event.organizer.id;
-  const isPast = new Date(event.date) <= new Date();
-  const registrationPending = register.isPending || cancel.isPending;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -41,22 +38,7 @@ export function EventDetailsPage() {
       <p className="mt-4 text-sm text-gray-600">{event.registrations_count} people registered</p>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        {user ? (
-          !isOrganizer &&
-          !isPast && (
-            <Button
-              variant={event.is_registered ? "secondary" : "primary"}
-              disabled={registrationPending}
-              onClick={() => (event.is_registered ? cancel.mutate(event.id) : register.mutate(event.id))}
-            >
-              {event.is_registered ? "Cancel registration" : "Register"}
-            </Button>
-          )
-        ) : (
-          <Link to="/login" className="text-sm font-medium text-blue-600 hover:text-blue-800">
-            Log in to register
-          </Link>
-        )}
+        <RegistrationButton event={event} user={user} />
         {isOrganizer && (
           <>
             <Link to={`/events/${event.id}/edit`}>

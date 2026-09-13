@@ -42,13 +42,13 @@ DATABASE_URL = env("DATABASE_URL", default="")
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default="", cast=list)
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS", default="", cast=list)
 
-# Consumed by apps.users (JWT cookies) in a later ticket; read here so the
-# values are never hardcoded and .env stays the single source of config.
+# Consumed by apps.users (JWT cookies); read here so the values are never
+# hardcoded and .env stays the single source of config.
 COOKIE_SECURE = env("COOKIE_SECURE", default=False, cast=bool)
 ACCESS_TOKEN_LIFETIME_MINUTES = env("ACCESS_TOKEN_LIFETIME_MINUTES", default=10, cast=int)
 REFRESH_TOKEN_LIFETIME_DAYS = env("REFRESH_TOKEN_LIFETIME_DAYS", default=7, cast=int)
 
-# Consumed by the seed_demo management command (later ticket).
+# Consumed by the seed_demo management command.
 DEMO_USER_PASSWORD = env("DEMO_USER_PASSWORD", default="demo12345")
 
 DJANGO_APPS = [
@@ -173,9 +173,8 @@ CSRF_COOKIE_HTTPONLY = False  # JS must read it to set X-CSRFToken (double-submi
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = COOKIE_SECURE
 
-# Celery: broker only. Result backend stays unset (Redis is not turned into
-# a second datastore, see spec §8/§9) and task routing is added once real
-# tasks exist (later ticket).
+# Celery: broker only. Result backend stays unset — Redis is not turned
+# into a second datastore (spec §8/§9).
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://redis:6379/0")
 CELERY_TASK_IGNORE_RESULT = True
 

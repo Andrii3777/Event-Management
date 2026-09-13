@@ -15,28 +15,26 @@ DEMO_USERS = [
     {"email": "bob@demo.local", "username": "bob"},
 ]
 
-# (title, location, days_offset from now) — negative offsets are past events,
-# positive are future; a mix of both exercises pagination/filters realistically.
+# days_offset: negative is a past event, positive is future — a mix of both
+# exercises pagination/filters realistically. registered: both demo users
+# get a registration for this event.
 DEMO_EVENTS = [
-    ("Kyiv Tech Meetup", "Kyiv", -30),
-    ("Lviv Startup Weekend", "Lviv", -14),
-    ("Odesa Design Sprint", "Odesa", -7),
-    ("Kharkiv Data Day", "Kharkiv", -3),
-    ("Dnipro DevOps Night", "Dnipro", -1),
-    ("Warsaw Frontend Conf", "Warsaw", 1),
-    ("Berlin Cloud Summit", "Berlin", 3),
-    ("Prague Python Meetup", "Prague", 5),
-    ("Vienna AI Workshop", "Vienna", 7),
-    ("Krakow JS Days", "Krakow", 10),
-    ("Wroclaw Product Talks", "Wroclaw", 14),
-    ("Gdansk Security Conf", "Gdansk", 21),
-    ("Poznan Mobile Dev Day", "Poznan", 30),
-    ("Budapest UX Forum", "Budapest", 45),
-    ("Bratislava Open Source Fest", "Bratislava", 60),
+    {"title": "Kyiv Tech Meetup", "location": "Kyiv", "days_offset": -30, "registered": True},
+    {"title": "Lviv Startup Weekend", "location": "Lviv", "days_offset": -14},
+    {"title": "Odesa Design Sprint", "location": "Odesa", "days_offset": -7, "registered": True},
+    {"title": "Kharkiv Data Day", "location": "Kharkiv", "days_offset": -3},
+    {"title": "Dnipro DevOps Night", "location": "Dnipro", "days_offset": -1, "registered": True},
+    {"title": "Warsaw Frontend Conf", "location": "Warsaw", "days_offset": 1, "registered": True},
+    {"title": "Berlin Cloud Summit", "location": "Berlin", "days_offset": 3},
+    {"title": "Prague Python Meetup", "location": "Prague", "days_offset": 5, "registered": True},
+    {"title": "Vienna AI Workshop", "location": "Vienna", "days_offset": 7},
+    {"title": "Krakow JS Days", "location": "Krakow", "days_offset": 10, "registered": True},
+    {"title": "Wroclaw Product Talks", "location": "Wroclaw", "days_offset": 14},
+    {"title": "Gdansk Security Conf", "location": "Gdansk", "days_offset": 21, "registered": True},
+    {"title": "Poznan Mobile Dev Day", "location": "Poznan", "days_offset": 30},
+    {"title": "Budapest UX Forum", "location": "Budapest", "days_offset": 45, "registered": True},
+    {"title": "Bratislava Open Source Fest", "location": "Bratislava", "days_offset": 60},
 ]
-
-# Indexes into DEMO_EVENTS that get registrations from both demo users.
-REGISTERED_EVENT_INDEXES = {0, 2, 4, 5, 7, 9, 11, 13}
 
 
 class Command(BaseCommand):
@@ -48,9 +46,7 @@ class Command(BaseCommand):
         self._seed_registrations(users, events)
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Seeded {len(users)} users and {len(events)} events (idempotent)."
-            )
+            self.style.SUCCESS(f"Seeded {len(users)} users and {len(events)} events (idempotent).")
         )
 
     def _get_or_create_user(self, data):
@@ -65,21 +61,22 @@ class Command(BaseCommand):
     def _get_or_create_events(self, organizer):
         now = timezone.now()
         events = []
-        for title, location, days_offset in DEMO_EVENTS:
+        for spec in DEMO_EVENTS:
             event, _ = Event.objects.get_or_create(
-                title=title,
+                title=spec["title"],
                 defaults={
-                    "description": f"Demo event in {location}.",
-                    "date": now + timedelta(days=days_offset),
-                    "location": location,
+                    "description": f"Demo event in {spec['location']}.",
+                    "date": now + timedelta(days=spec["days_offset"]),
+                    "location": spec["location"],
                     "organizer": organizer,
                 },
             )
-            events.append(event)
+            events.append((event, spec.get("registered", False)))
         return events
 
     def _seed_registrations(self, users, events):
-        for index in REGISTERED_EVENT_INDEXES:
-            event = events[index]
+        for event, registered in events:
+            if not registered:
+                continue
             for user in users:
                 EventRegistration.objects.get_or_create(user=user, event=event)

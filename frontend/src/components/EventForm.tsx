@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isAxiosError } from "axios";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { createEventSchema, type EventFormValues } from "../features/events/schemas";
+import { applyServerFieldErrors } from "../features/shared/formErrors";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Textarea } from "./Textarea";
@@ -32,15 +32,8 @@ export function EventForm({ defaultValues, submitLabel, onSubmit }: EventFormPro
     try {
       await onSubmit(values);
     } catch (error) {
-      if (isAxiosError(error) && error.response?.status === 400) {
-        const data = error.response.data as Record<string, string[] | undefined>;
-        for (const field of FIELDS) {
-          const message = data[field]?.[0];
-          if (message) {
-            setError(field, { message });
-          }
-        }
-      } else {
+      const handled = applyServerFieldErrors(error, setError, FIELDS);
+      if (!handled) {
         setFormError("Something went wrong. Please try again.");
       }
     }

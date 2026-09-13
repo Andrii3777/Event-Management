@@ -7,11 +7,9 @@ from rest_framework.test import APIClient
 
 from apps.events.models import Event
 
+from .helpers import future
+
 User = get_user_model()
-
-
-def future(days=1):
-    return timezone.now() + timedelta(days=days)
 
 
 class UpdateEventTests(TestCase):
@@ -20,9 +18,7 @@ class UpdateEventTests(TestCase):
         self.organizer = User.objects.create_user(
             email="alice@example.com", username="alice", password="x"
         )
-        self.other = User.objects.create_user(
-            email="bob@example.com", username="bob", password="x"
-        )
+        self.other = User.objects.create_user(email="bob@example.com", username="bob", password="x")
         self.future_event = Event.objects.create(
             title="Meetup",
             description="desc",

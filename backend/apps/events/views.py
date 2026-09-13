@@ -1,12 +1,13 @@
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters as drf_filters
-from rest_framework import serializers, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.common.schema import error_detail_serializer
 from apps.registrations.models import EventRegistration
 from apps.registrations.serializers import EventRegistrationSerializer
 from apps.registrations.services import cancel_registration, register_user_for_event
@@ -17,12 +18,7 @@ from .pagination import EventPagination
 from .permissions import IsOrganizerOrReadOnly
 from .serializers import EventSerializer, EventWriteSerializer
 
-# Shared shape for every error body this app returns (spec: DRF's own
-# {"detail": ...} format, no envelope) — used only to describe non-2xx
-# responses that automatic schema generation cannot infer.
-_error_response = inline_serializer(
-    name="EventErrorDetail", fields={"detail": serializers.CharField()}
-)
+_error_response = error_detail_serializer("EventErrorDetail")
 
 
 @extend_schema_view(
@@ -90,9 +86,14 @@ class EventViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(organizer=self.request.user)
 
-    def create(self, request, *args, **kwargs):
+    def _read_data_for(self, write_serializer):
         # Respond with the read shape (organizer, timestamps) instead of the
         # write serializer's own (organizer-less) fields.
+        return EventSerializer(
+            write_serializer.instance, context=self.get_serializer_context()
+        ).data
+
+    def create(self, request, *args, **kwargs):
         write_serializer = self.get_serializer(data=request.data)
         write_serializer.is_valid(raise_exception=True)
         self.perform_create(write_serializer)
@@ -102,9 +103,9 @@ class EventViewSet(viewsets.ModelViewSet):
         instance = write_serializer.instance
         instance.registrations_count = 0
         instance.is_registered = False
-        read_serializer = EventSerializer(instance, context=self.get_serializer_context())
-        headers = self.get_success_headers(read_serializer.data)
-        return Response(read_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        data = self._read_data_for(write_serializer)
+        headers = self.get_success_headers(data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", False)
@@ -112,10 +113,7 @@ class EventViewSet(viewsets.ModelViewSet):
         write_serializer = self.get_serializer(instance, data=request.data, partial=partial)
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
-        read_serializer = EventSerializer(
-            write_serializer.instance, context=self.get_serializer_context()
-        )
-        return Response(read_serializer.data)
+        return Response(self._read_data_for(write_serializer))
 
     @extend_schema(
         methods=["POST"],

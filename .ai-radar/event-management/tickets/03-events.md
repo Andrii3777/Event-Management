@@ -58,10 +58,9 @@ R154i
 - [ ] `EventWriteSerializer` (`title, description, date, location`) не содержит поле `organizer`
       вообще; `perform_create` подставляет `request.user`
 - [ ] `EventSerializer` (чтение): `id, title, description, date, location, organizer{id,username},
-      registrations_count, is_registered, created_at, updated_at`
-- [ ] `registrations_count` и `is_registered` — аннотации queryset
-      (`Count("registrations")`, `Exists(...)`), не Python-свойства; для анонима `is_registered`
-      — константа `False` без подзапроса
+      created_at, updated_at`. **`registrations_count` и `is_registered` сюда НЕ входят** — они
+      физически не могут существовать до модели `EventRegistration`; закрывает их таск 04
+      (см. D01 в `manifest.md` и в этом же разделе спецификации, §6)
 - [ ] `list`/`retrieve` — `AllowAny`; `create` — `IsAuthenticated`; `update`/`destroy` —
       `IsAuthenticated` + объектный `IsOrganizerOrReadOnly`
 - [ ] Создание с датой в прошлом → 400; PATCH прошедшего события без смены `date` → 200; смена

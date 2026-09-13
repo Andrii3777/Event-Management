@@ -5,12 +5,10 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from .helpers import future
+
 User = get_user_model()
 EVENTS_URL = "/api/v1/events/"
-
-
-def future(days=1):
-    return timezone.now() + timedelta(days=days)
 
 
 class CreateEventTests(TestCase):

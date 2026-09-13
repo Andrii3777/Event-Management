@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isAxiosError } from "axios";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
@@ -7,6 +6,7 @@ import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { useLogin } from "../features/auth/hooks";
 import { loginSchema, type LoginFormValues } from "../features/auth/schemas";
+import { applyServerFieldErrors } from "../features/shared/formErrors";
 
 interface LocationState {
   from?: { pathname: string };
@@ -30,15 +30,8 @@ export function LoginPage() {
     login.mutate(values, {
       onSuccess: () => navigate(redirectTo, { replace: true }),
       onError: (error) => {
-        if (isAxiosError(error) && error.response?.status === 400) {
-          const data = error.response.data as Record<string, string[] | undefined>;
-          for (const field of ["email", "password"] as const) {
-            const message = data[field]?.[0];
-            if (message) {
-              setError(field, { message });
-            }
-          }
-        } else {
+        const handled = applyServerFieldErrors(error, setError, ["email", "password"] as const);
+        if (!handled) {
           // DRF replies 401 with the same message regardless of which part
           // of the credentials was wrong (R13.1) — surface it on the form.
           setError("password", { message: "Incorrect email or password." });
