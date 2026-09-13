@@ -18,13 +18,14 @@ class OrganizerSerializer(serializers.ModelSerializer):
 class EventSerializer(serializers.ModelSerializer):
     """Read shape.
 
-    `registrations_count`/`is_registered` from spec §6 are intentionally
-    absent: they require annotating over `EventRegistration`, which does not
-    exist yet (apps.registrations has no models — ticket 04). See ticket 03
-    handoff notes for the exact blocker.
+    `registrations_count`/`is_registered` are queryset annotations (see
+    `EventViewSet.get_queryset`, spec §6, D01) — not model properties, so a
+    list of events costs no extra per-row query (R95).
     """
 
     organizer = OrganizerSerializer(read_only=True)
+    registrations_count = serializers.IntegerField(read_only=True)
+    is_registered = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Event
@@ -35,6 +36,8 @@ class EventSerializer(serializers.ModelSerializer):
             "date",
             "location",
             "organizer",
+            "registrations_count",
+            "is_registered",
             "created_at",
             "updated_at",
         ]
