@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -140,9 +141,28 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+AUTH_USER_MODEL = "users.User"
+
 REST_FRAMEWORK = {
     "DEFAULT_EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "apps.users.authentication.CookieJWTAuthentication",
+    ],
 }
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=ACCESS_TOKEN_LIFETIME_MINUTES),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=REFRESH_TOKEN_LIFETIME_DAYS),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+# Cookie-based auth means the browser sends credentials automatically, so
+# CSRF must be on (brief R70, spec §5). CsrfViewMiddleware itself is in
+# MIDDLEWARE already (task 01); these are just its flags.
+CSRF_COOKIE_HTTPONLY = False  # JS must read it to set X-CSRFToken (double-submit)
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = COOKIE_SECURE
 
 # Celery: broker only. Result backend stays unset (Redis is not turned into
 # a second datastore, see spec §8/§9) and task routing is added once real

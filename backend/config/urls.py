@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
-# App URLs are added by later tickets (users/events/registrations) under
-# /api/v1/. Until then, any /api/v1/... request falls through to Django's
-# standard 404 — that is the expected response for this ticket.
+# events/registrations URLs are added by later tickets under /api/v1/.
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/v1/auth/", include("apps.users.urls")),
 ]
