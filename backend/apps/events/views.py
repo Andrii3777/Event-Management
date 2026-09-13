@@ -1,7 +1,8 @@
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer
 from rest_framework import filters as drf_filters
-from rest_framework import status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -16,7 +17,40 @@ from .pagination import EventPagination
 from .permissions import IsOrganizerOrReadOnly
 from .serializers import EventSerializer, EventWriteSerializer
 
+# Shared shape for every error body this app returns (spec: DRF's own
+# {"detail": ...} format, no envelope) — used only to describe non-2xx
+# responses that automatic schema generation cannot infer.
+_error_response = inline_serializer(
+    name="EventErrorDetail", fields={"detail": serializers.CharField()}
+)
 
+
+@extend_schema_view(
+    create=extend_schema(
+        responses={
+            201: EventSerializer,
+            400: _error_response,
+            401: _error_response,
+        }
+    ),
+    update=extend_schema(
+        responses={
+            200: EventSerializer,
+            400: _error_response,
+            403: _error_response,
+            404: _error_response,
+        }
+    ),
+    partial_update=extend_schema(
+        responses={
+            200: EventSerializer,
+            400: _error_response,
+            403: _error_response,
+            404: _error_response,
+        }
+    ),
+    destroy=extend_schema(responses={204: None, 403: _error_response, 404: _error_response}),
+)
 class EventViewSet(viewsets.ModelViewSet):
     # No PUT (spec §6): PATCH covers every write scenario the frontend needs.
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -83,6 +117,21 @@ class EventViewSet(viewsets.ModelViewSet):
         )
         return Response(read_serializer.data)
 
+    @extend_schema(
+        methods=["POST"],
+        request=None,
+        responses={
+            201: EventRegistrationSerializer,
+            400: _error_response,
+            401: _error_response,
+            404: _error_response,
+            409: _error_response,
+        },
+    )
+    @extend_schema(
+        methods=["DELETE"],
+        responses={204: None, 401: _error_response, 404: _error_response},
+    )
     @action(detail=True, methods=["post", "delete"], url_path="register")
     def register(self, request, pk=None):
         # HTTP only: all registration/cancellation rules live in

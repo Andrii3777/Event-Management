@@ -1,6 +1,7 @@
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework import generics, status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import generics, serializers, status
 from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,7 +13,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .cookies import REFRESH_COOKIE_NAME, clear_auth_cookies, set_auth_cookies
 from .serializers import RegisterSerializer, UserSerializer
 
+# Shared shape for every error body this app returns (spec: DRF's own
+# {"detail": ...} format, no envelope) — used only to describe non-2xx
+# responses that automatic schema generation cannot infer.
+_error_response = inline_serializer(
+    name="AuthErrorDetail", fields={"detail": serializers.CharField()}
+)
+_login_response = inline_serializer(
+    name="LoginResponse", fields={"user": UserSerializer()}
+)
+# TokenObtainPairSerializer names its credential field after
+# USERNAME_FIELD (spec G01: "email"), plus the standard "password" field.
+_login_request = inline_serializer(
+    name="LoginRequest",
+    fields={"email": serializers.EmailField(), "password": serializers.CharField()},
+)
 
+
+@extend_schema(responses={201: UserSerializer, 400: _error_response})
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
@@ -25,6 +43,10 @@ class LoginView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        request=_login_request,
+        responses={200: _login_response, 400: _error_response, 401: _error_response},
+    )
     def post(self, request):
         serializer = TokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
