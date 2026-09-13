@@ -1,14 +1,21 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
 
 import "./index.css";
 
-// Placeholder page for this ticket only: routing, screens and features
-// are built by later tickets (06/07).
+import { primeCsrf } from "./api/client";
+import { queryClient } from "./api/queryClient";
+import { router } from "./router";
+
+// Fetch the csrftoken cookie once before any unsafe request needs it (R70.1).
+void primeCsrf();
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <p className="text-lg font-medium text-gray-700">Event Management — coming soon</p>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </React.StrictMode>,
 );
