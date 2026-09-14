@@ -4,6 +4,20 @@
   <img src="docs/assets/preview.png" alt="Event Management Platform Preview" width="100%" />
 </p>
 
+## Live Demo
+
+- **Live Application**: [https://event-management-bice-five.vercel.app](https://event-management-bice-five.vercel.app)
+- **Interactive API Docs (Swagger UI)**: [https://event-management-bice-five.vercel.app/api/docs/](https://event-management-bice-five.vercel.app/api/docs/)
+- **Backend API Service**: [https://event-backend-w942.onrender.com](https://event-backend-w942.onrender.com)
+
+#### Demo Accounts
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Organizer / User** | `alice@demo.local` | `demo12345` |
+| **Participant** | `bob@demo.local` | `demo12345` |
+
+*(You can also sign up with any custom email and password directly through the UI).*
+
 ## Description
 
 A modern, production-ready full-stack web platform for organizing events and managing attendee registrations. Built with a robust **Django REST Framework** backend, an asynchronous **Celery & Redis** processing pipeline, and a reactive **React + TypeScript + Tailwind CSS** frontend.

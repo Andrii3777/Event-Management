@@ -53,7 +53,11 @@ if not DEBUG and (not SECRET_KEY or SECRET_KEY == dev_insecure_key):
         "SECRET_KEY is required and cannot use dev fallback when DEBUG=False."
     )
 
-ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"], cast=list)
+ALLOWED_HOSTS = env(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", ".onrender.com", ".vercel.app"],
+    cast=list,
+)
 # Optional database URL: the project connects to Postgres via the
 # POSTGRES_* variables below instead of a single connection URL.
 DATABASE_URL = env("DATABASE_URL", default="")
@@ -61,7 +65,16 @@ DATABASE_URL = env("DATABASE_URL", default="")
 # Same treatment as CORS_ALLOWED_ORIGINS below: kept as a documented,
 # unused name so a future cross-origin deployment has a place to start.
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default=[], cast=list)
-CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS", default=[], cast=list)
+CSRF_TRUSTED_ORIGINS = env(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://*.onrender.com",
+        "https://*.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
+    cast=list,
+)
 
 # Consumed by apps.users (JWT cookies); read here so the values are never
 # hardcoded and .env stays the single source of config.
@@ -223,6 +236,11 @@ CSRF_COOKIE_SECURE = COOKIE_SECURE
 # persistent datastore since task status is reflected directly in PostgreSQL.
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://redis:6379/0")
 CELERY_TASK_IGNORE_RESULT = True
+# Fallback to synchronous task execution when no external broker is configured
+CELERY_TASK_ALWAYS_EAGER = env.bool(
+    "CELERY_TASK_ALWAYS_EAGER",
+    default=(not env("REDIS_URL", default="")),
+)
 
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env("EMAIL_PORT", default=587, cast=int)
