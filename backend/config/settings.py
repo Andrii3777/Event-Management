@@ -248,6 +248,8 @@ CELERY_TASK_ALWAYS_EAGER = env(
     cast=bool,
 )
 
+RESEND_API_KEY = env("RESEND_API_KEY", default="")
+
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
@@ -256,9 +258,15 @@ EMAIL_USE_TLS = env("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_USE_SSL = env("EMAIL_USE_SSL", default=False, cast=bool)
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
-    default=EMAIL_HOST_USER or "noreply@eventmanagement.local",
+    default=(
+        "onboarding@resend.dev"
+        if RESEND_API_KEY
+        else (EMAIL_HOST_USER or "noreply@eventmanagement.local")
+    ),
 )
-if EMAIL_HOST:
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "apps.common.email_backends.ResendEmailBackend"
+elif EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 else:
     # No mail server configured: print outgoing mail to the worker's log

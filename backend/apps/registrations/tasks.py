@@ -45,7 +45,19 @@ def send_join_confirmation_email(user_id: int, event_id: int) -> None:
         f"Location: {event.location}\n\n"
         "This confirms your participation."
     )
-    send_mail(subject, message, None, [user_email])
+    try:
+        send_mail(subject, message, None, [user_email])
+    except Exception as exc:
+        logger.error(
+            "Failed to send confirmation email to %s for event %s: %s",
+            user_email,
+            event_id,
+            exc,
+        )
+        from django.conf import settings
+
+        if not getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+            raise
 
 
 send_registration_email = send_join_confirmation_email
