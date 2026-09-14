@@ -2,7 +2,6 @@ import json
 import logging
 import urllib.error
 import urllib.request
-
 from collections.abc import Sequence
 
 from django.conf import settings
