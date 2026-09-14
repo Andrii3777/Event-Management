@@ -17,3 +17,24 @@ quote-style = "double"
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 testpaths = ["apps"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = ["backend", "."]
+plugins = [
+    "mypy_django_plugin.main",
+    "mypy_drf_plugin.main",
+]
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = true
+disable_error_code = ["import-untyped", "var-annotated"]
+exclude = [
+    ".*/migrations/.*",
+    ".*/tests/.*",
+]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+

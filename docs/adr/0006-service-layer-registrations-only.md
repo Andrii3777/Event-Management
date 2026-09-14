@@ -1,30 +1,19 @@
-# 0006. Сервисный слой у записей, но не у CRUD событий
+# 0006. Dedicated Service Layer for Registrations
 
-## Контекст
+## Context
 
-Требование разрешает не вводить сервисный слой для простого CRUD и отдельно требует сервис
-именно для записей на событие, потому что там есть бизнес-правила: проверка дубля, проверка даты
-события, атомарная транзакция, постановка задачи в очередь на отправку письма.
+Standard CRUD operations for events map cleanly to Django REST Framework viewsets and serializers. Conversely, event registration involves multi-step business logic: verifying the event is in the future, atomic database constraint handling, idempotent conflict translation, and scheduling background email notifications.
 
-## Решение
+## Decision
 
-`apps/registrations/services.py` содержит `register_user_for_event` и `cancel_registration` —
-вся логика записи и отмены идёт через них. `apps/events` сервисного слоя не имеет: `ViewSet`
-работает с моделью и сериализаторами напрямую как `ModelViewSet`.
+A dedicated service layer (`apps/registrations/services.py`) encapsulates `join_event` and `leave_event` (and their backward-compatible aliases `register_user_for_event` / `cancel_registration`). The `events` application remains service-free, utilizing standard DRF `ModelViewSet` conventions for event CRUD.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «единообразный сервисный слой для всех приложений ради консистентности» — для
-событий он оказался бы пустой прослойкой без единой строки бизнес-правила, то есть абстракцией
-без задачи, которую требование прямо запрещает. Отвергнут и противоположный вариант «логика
-записи прямо во view» — она включает атомарную транзакцию, `on_commit`-хук и обработку
-конфликта, и размазывание этого по view лишило бы проект единственного места, где эти правила
-видны целиком.
+- Introducing an artificial service layer for standard Event CRUD would create boilerplate pass-through abstractions with zero business logic.
+- Placing registration business logic directly inside view methods would scatter transaction boundaries, `on_commit` hooks, and conflict handling across HTTP request handlers, making unit testing and reuse difficult.
 
-## Последствия
+## Consequences
 
-В кодовой базе два разных стиля организации логики: CRUD событий живёт во ViewSet, логика записи
-— в отдельном сервисном модуле. Эта асимметрия осознанная, но её нужно объяснять каждому новому
-разработчику явно (раздел Architecture Decisions в README), потому что из структуры каталогов
-она не следует. Если у событий когда-нибудь появится бизнес-правило сложнее CRUD, решение о
-введении сервиса для них придётся принимать заново, а не копировать текущий шаблон механически.
+- Architectural logic is intentionally balanced: simple CRUD relies on DRF ViewSets, while complex transactional workflows utilize dedicated service functions.
+- Registration endpoints invoke the service layer and translate service-level domain exceptions (`AlreadyJoined`, `EventAlreadyPast`, `NotJoined`) into consistent HTTP responses.

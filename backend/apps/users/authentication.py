@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from rest_framework import exceptions
 from rest_framework.authentication import CSRFCheck
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -7,11 +8,9 @@ from .cookies import ACCESS_COOKIE_NAME
 
 
 class CookieJWTAuthentication(JWTAuthentication):
-    """Reads the access token from a cookie instead of the `Authorization`
-    header (brief R63/R64), then runs the same CSRF double-submit check
-    `SessionAuthentication` runs — cookie-based auth is exactly the case
-    CSRF protection exists for (spec §5), and DRF's `APIView` otherwise
-    disables Django's own CsrfViewMiddleware for every API view.
+    """Reads the access token from an HttpOnly cookie instead of the Authorization
+    header, then runs the standard CSRF double-submit check that SessionAuthentication
+    runs — cookie-based auth requires CSRF protection for mutating requests.
     """
 
     def authenticate(self, request):
@@ -31,7 +30,7 @@ class CookieJWTAuthentication(JWTAuthentication):
         return user, validated_token
 
     def enforce_csrf(self, request):
-        check = CSRFCheck(lambda req: None)
+        check = CSRFCheck(lambda req: HttpResponse())
         check.process_request(request)
         reason = check.process_view(request, None, (), {})
         if reason:

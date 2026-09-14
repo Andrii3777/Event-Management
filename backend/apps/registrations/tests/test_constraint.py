@@ -12,9 +12,8 @@ User = get_user_model()
 
 
 class UniqueConstraintTests(TestCase):
-    """The service's own duplicate handling isn't what guarantees no double
-    row exists — the database constraint is (spec §3, R54). Prove it by
-    going around the service entirely.
+    """Verify that the database constraint guarantees uniqueness and prevents
+    duplicate registrations even if bypassing service-level checks.
     """
 
     def setUp(self):

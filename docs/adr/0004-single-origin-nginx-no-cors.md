@@ -1,32 +1,19 @@
-# 0004. Один origin через nginx вместо CORS
+# 0004. Single-Origin Architecture via Nginx instead of CORS
 
-## Контекст
+## Context
 
-Аутентификация построена на HttpOnly cookie (ADR-0001), поведение которых зависит от `SameSite`.
-Бриф упоминает `CORS_ALLOWED_ORIGINS` как потенциальную переменную окружения и просит настроить
-взаимодействие фронтенд/backend origin.
+Authentication relies on `HttpOnly` cookies (ADR-0001), whose delivery depends on browser `SameSite` policies. Cross-origin setups complicate cookie sharing in local and containerized environments.
 
-## Решение
+## Decision
 
-Фронтенд и backend отдаются с одного origin: nginx в контейнере фронтенда отдаёт статику и
-проксирует `/api`, `/admin`, `/static` на `backend:8000`; в локальной разработке без Docker ту же
-роль играет прокси Vite dev-сервера. `django-cors-headers` не добавляется в зависимости, CORS не
-настраивается.
+The frontend and backend are served from a single origin in production. Nginx in the frontend container serves static assets and reverse-proxies `/api/`, `/admin/`, and `/static/` to `backend:8000`. In local development without Docker, Vite's dev server proxy serves the identical purpose. `django-cors-headers` is omitted from production dependencies, eliminating CORS overhead.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «включить `django-cors-headers` и сделать `CORS_ALLOWED_ORIGINS` рабочей
-настройкой» — при разных origin cookie потребовали бы `SameSite=None`, а значит и
-`Secure=True` даже в dev по HTTP, что либо ломает локальную разработку без HTTPS, либо требует
-самоподписанных сертификатов только ради того, чтобы cookie доходили между портами 3000 и 8000.
-Кросс-доменного сценария (frontend и API на разных доменах в production) в задаче нет, поэтому
-пакет остался бы зависимостью без задачи, что прямо запрещено требованием минимизировать
-зависимости.
+- Enabling `django-cors-headers` and cross-origin cookies would require `SameSite=None`, which browsers only accept over HTTPS (`Secure=True`). This complicates local HTTP development and introduces cross-site cookie exposure.
+- Serving frontend and backend on the same origin allows `SameSite=Lax` cookies, offering strong CSRF defense while ensuring frictionless local and Docker-based operation.
 
-## Последствия
+## Consequences
 
-Nginx — обязательная часть схемы деплоя, а не удобство: без него один origin не собирается и
-cookie перестают ходить между фронтендом и API. Если в будущем потребуется отдавать фронтенд с
-отдельного домена (например, с CDN), придётся вернуть CORS и переключить `SameSite` на `None` с
-`Secure=True` — это уже помечено в README и `.env.example` как несделанная, но предусмотренная
-работа, а не забытая деталь.
+- Nginx reverse proxy configuration is an integral component of the Docker deployment architecture.
+- If a future deployment requires hosting the frontend on an independent CDN domain, CORS and `SameSite=None` with TLS termination would need to be introduced.

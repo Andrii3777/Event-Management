@@ -3,7 +3,7 @@ from django.conf import settings
 ACCESS_COOKIE_NAME = "access_token"
 REFRESH_COOKIE_NAME = "refresh_token"
 
-# Different Path per cookie (spec §4): access rides on every /api/ call,
+# Scoped Path per cookie: access rides on every /api/ call,
 # refresh only leaves the two endpoints that need it.
 ACCESS_COOKIE_PATH = "/api/"
 REFRESH_COOKIE_PATH = "/api/v1/auth/"

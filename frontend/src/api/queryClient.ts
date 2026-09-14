@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-// Server state lives only here (R122) — no Redux/Zustand/Context duplicate.
+// Server state lives only here — no Redux/Zustand/Context duplicate.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

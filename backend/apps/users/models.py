@@ -3,11 +3,10 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """Custom user with email as the login field (brief G01).
+    """Custom user with email as the login field.
 
-    `username` stays as a separate, still-unique field (inherited from
-    AbstractUser unchanged) because the API represents an event's organizer
-    by username, not email (spec §3).
+    `username` stays as a separate unique field because the API represents
+    an event's organizer by username, not email.
     """
 
     email = models.EmailField(unique=True)

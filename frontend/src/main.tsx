@@ -9,8 +9,8 @@ import { primeCsrf } from "./api/client";
 import { queryClient } from "./api/queryClient";
 import { router } from "./router";
 
-// Fetch the csrftoken cookie once before any unsafe request needs it (R70.1).
-void primeCsrf();
+// Fetch the csrftoken cookie once before any unsafe request needs it.
+void primeCsrf().catch(() => {});
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

@@ -13,12 +13,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.common.schema import error_detail_serializer
 
 from .cookies import REFRESH_COOKIE_NAME, clear_auth_cookies, set_auth_cookies
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import SignUpSerializer, UserSerializer
 
 _error_response = error_detail_serializer("AuthErrorDetail")
 _login_response = inline_serializer(name="LoginResponse", fields={"user": UserSerializer()})
 # TokenObtainPairSerializer names its credential field after
-# USERNAME_FIELD (spec G01: "email"), plus the standard "password" field.
+# USERNAME_FIELD ("email"), plus the standard "password" field.
 _login_request = inline_serializer(
     name="LoginRequest",
     fields={"email": serializers.EmailField(), "password": serializers.CharField()},
@@ -26,14 +26,17 @@ _login_request = inline_serializer(
 
 
 @extend_schema(responses={201: UserSerializer, 400: _error_response})
-class RegisterView(generics.CreateAPIView):
-    serializer_class = RegisterSerializer
+class SignUpView(generics.CreateAPIView):
+    serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
 
 
+RegisterView = SignUpView
+
+
 class LoginView(APIView):
-    """POST /auth/token/ — tokens never reach the response body (R65):
-    they're set as cookies, the body only carries the user (spec §4).
+    """POST /auth/token/ — tokens are set as HttpOnly cookies,
+    the response body only carries the user profile.
     """
 
     permission_classes = [AllowAny]
@@ -54,7 +57,7 @@ class LoginView(APIView):
 
 class RefreshView(APIView):
     """POST /auth/token/refresh/ — refresh comes from the cookie, not the
-    body; SimpleJWT's own serializer already rotates + blacklists (spec §4).
+    body; SimpleJWT rotates and blacklists tokens.
     """
 
     permission_classes = [AllowAny]
@@ -111,7 +114,7 @@ class MeView(generics.RetrieveAPIView):
 @method_decorator(ensure_csrf_cookie, name="get")
 class CsrfView(APIView):
     """GET /auth/csrf/ — issues the (non-HttpOnly) csrftoken cookie before
-    the first unsafe request, including before login (spec §5).
+    the first unsafe request, including before login.
     """
 
     permission_classes = [AllowAny]

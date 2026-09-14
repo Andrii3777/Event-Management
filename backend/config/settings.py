@@ -3,18 +3,34 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Read .env file from project root or backend dir if present and not already set
+for env_path in [BASE_DIR / ".env", BASE_DIR.parent / ".env"]:
+    if env_path.exists():
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip("'\"")
+                    if k not in os.environ:
+                        os.environ[k] = v
 
 
 def env(name, default=None, cast=str):
     """Read one environment variable, casting it; falls back to `default`.
 
-    Kept as a plain function instead of a package (e.g. django-environ):
-    the only casts this project needs are str/bool/int/list, and a few
-    lines here cover that without an extra dependency (see spec §1).
+    If default is passed as a string for cast=list, it will be safely cast
+    to a list to prevent ImproperlyConfigured errors on ALLOWED_HOSTS/origins.
     """
     value = os.environ.get(name)
     if value is None:
+        if default is not None and cast is list and isinstance(default, str):
+            return [item.strip() for item in default.split(",") if item.strip()]
         return default
     if cast is bool:
         return value.strip().lower() in ("1", "true", "yes", "on")
@@ -30,17 +46,22 @@ SECRET_KEY = env(
     # start with an empty .env. Real deployments must set SECRET_KEY.
     default="django-insecure-dev-only-secret-key-change-me",
 )
-ALLOWED_HOSTS = env("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=list)
 
-# Named by the brief (§43) but not read anywhere: the project connects to
-# Postgres via the POSTGRES_* variables below, one per docker-compose
-# service, instead of a single connection URL.
+dev_insecure_key = "django-insecure-dev-only-secret-key-change-me"
+if not DEBUG and (not SECRET_KEY or SECRET_KEY == dev_insecure_key):
+    raise ImproperlyConfigured(
+        "SECRET_KEY is required and cannot use dev fallback when DEBUG=False."
+    )
+
+ALLOWED_HOSTS = env("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"], cast=list)
+# Optional database URL: the project connects to Postgres via the
+# POSTGRES_* variables below instead of a single connection URL.
 DATABASE_URL = env("DATABASE_URL", default="")
 
 # Same treatment as CORS_ALLOWED_ORIGINS below: kept as a documented,
 # unused name so a future cross-origin deployment has a place to start.
-CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default="", cast=list)
-CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS", default="", cast=list)
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS", default=[], cast=list)
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS", default=[], cast=list)
 
 # Consumed by apps.users (JWT cookies); read here so the values are never
 # hardcoded and .env stays the single source of config.
@@ -116,6 +137,18 @@ DATABASES = {
     }
 }
 
+# If running tests locally on host machine (outside Docker) where 'postgres' hostname
+# is unresolvable, fallback to SQLite in-memory so developers can run pytest instantly.
+if (
+    ("pytest" in sys.modules or "test" in sys.argv)
+    and not os.path.exists("/.dockerenv")
+    and DATABASES["default"]["HOST"] == "postgres"
+):
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -153,7 +186,7 @@ REST_FRAMEWORK = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Event Management API",
-    "DESCRIPTION": "REST API for managing events, registrations and auth (spec §33).",
+    "DESCRIPTION": "REST API for managing events, registrations and auth.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "OAS_VERSION": "3.1.0",
@@ -167,14 +200,14 @@ SIMPLE_JWT = {
 }
 
 # Cookie-based auth means the browser sends credentials automatically, so
-# CSRF must be on (brief R70, spec §5). CsrfViewMiddleware itself is in
-# MIDDLEWARE already (task 01); these are just its flags.
+# CSRF protection must be on. CsrfViewMiddleware itself is in MIDDLEWARE;
+# these are its cookie configuration flags.
 CSRF_COOKIE_HTTPONLY = False  # JS must read it to set X-CSRFToken (double-submit)
 CSRF_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = COOKIE_SECURE
 
-# Celery: broker only. Result backend stays unset — Redis is not turned
-# into a second datastore (spec §8/§9).
+# Celery: broker only. Result backend stays unset — Redis is not used as a
+# persistent datastore since task status is reflected directly in PostgreSQL.
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://redis:6379/0")
 CELERY_TASK_IGNORE_RESULT = True
 
@@ -187,7 +220,7 @@ if EMAIL_HOST:
     EMAIL_USE_TLS = True
 else:
     # No mail server configured: print outgoing mail to the worker's log
-    # instead, so registration emails are visible without one (spec §9).
+    # instead, so registration emails are visible without a mail server.
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 DJANGO_LOG_LEVEL = env("DJANGO_LOG_LEVEL", default="INFO")

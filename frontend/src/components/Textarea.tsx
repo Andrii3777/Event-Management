@@ -11,21 +11,23 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
 ) {
   const inputId = id ?? name;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+    <div className="flex flex-col gap-1.5 w-full min-w-0">
+      <label htmlFor={inputId} className="text-xs font-semibold text-slate-700">
         {label}
       </label>
       <textarea
         id={inputId}
         name={name}
         ref={ref}
-        className={`rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          error ? "border-red-500" : "border-gray-300"
+        className={`w-full rounded-xl border bg-white/70 backdrop-blur-xs p-3.5 text-base sm:text-sm text-slate-800 placeholder:text-slate-400 transition-all duration-150 focus:bg-white focus:outline-none focus:ring-4 ${
+          error
+            ? "border-red-400 focus:border-red-500 focus:ring-red-100/60"
+            : "border-slate-200/90 focus:border-blue-500 focus:ring-blue-100/70 shadow-2xs"
         } ${className}`}
         {...props}
       />
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-xs font-medium text-red-500 mt-0.5 break-words" role="alert">
           {error}
         </p>
       )}

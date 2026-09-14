@@ -1,8 +1,7 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-User = get_user_model()
+from apps.users.tests.factories import UserFactory
 
 TOKEN_URL = "/api/v1/auth/token/"
 REFRESH_URL = "/api/v1/auth/token/refresh/"
@@ -12,7 +11,7 @@ PASSWORD = "N0t-A-Common-Pass!"
 class RefreshTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        User.objects.create_user(email="alice@example.com", username="alice", password=PASSWORD)
+        UserFactory(email="alice@example.com", username="alice", password=PASSWORD)
 
     def test_refresh_with_cookie_issues_new_pair(self):
         login = self.client.post(TOKEN_URL, {"email": "alice@example.com", "password": PASSWORD})

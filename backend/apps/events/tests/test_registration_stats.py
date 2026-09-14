@@ -1,36 +1,19 @@
-from datetime import timedelta
-
-from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.events.models import Event
-from apps.registrations.models import EventRegistration
-
-User = get_user_model()
+from apps.events.tests.factories import EventFactory
+from apps.registrations.tests.factories import EventRegistrationFactory
+from apps.users.tests.factories import UserFactory
 
 
 class RegistrationStatsAnnotationTests(TestCase):
-    """D01 (spec §6): registrations_count/is_registered were deferred by
-    ticket 03 until EventRegistration existed. Regression-tests them here,
-    against the serializer they belong to, not against registrations
-    business logic.
-    """
+    """Verify registrations_count and is_registered annotations on EventSerializer."""
 
     def setUp(self):
         self.client = APIClient()
-        self.organizer = User.objects.create_user(
-            email="alice@example.com", username="alice", password="x"
-        )
-        self.user = User.objects.create_user(email="bob@example.com", username="bob", password="x")
-        self.event = Event.objects.create(
-            title="Meetup",
-            description="desc",
-            date=timezone.now() + timedelta(days=1),
-            location="Kyiv",
-            organizer=self.organizer,
-        )
+        self.organizer = UserFactory(email="alice@example.com", username="alice")
+        self.user = UserFactory(email="bob@example.com", username="bob")
+        self.event = EventFactory(title="Meetup", organizer=self.organizer)
         self.detail_url = f"/api/v1/events/{self.event.id}/"
         self.register_url = f"/api/v1/events/{self.event.id}/register/"
 
@@ -58,7 +41,7 @@ class RegistrationStatsAnnotationTests(TestCase):
         self.assertIs(response.data["is_registered"], False)
 
     def test_is_registered_is_per_user_not_global(self):
-        EventRegistration.objects.create(user=self.organizer, event=self.event)
+        EventRegistrationFactory(user=self.organizer, event=self.event)
 
         self.client.force_authenticate(self.user)
         response = self.client.get(self.detail_url)

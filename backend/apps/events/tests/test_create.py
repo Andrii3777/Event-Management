@@ -1,22 +1,20 @@
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.users.tests.factories import UserFactory
+
 from .helpers import future
 
-User = get_user_model()
 EVENTS_URL = "/api/v1/events/"
 
 
 class CreateEventTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(
-            email="alice@example.com", username="alice", password="x"
-        )
+        self.user = UserFactory(email="alice@example.com", username="alice")
 
     def test_anonymous_cannot_create(self):
         response = self.client.post(
@@ -45,7 +43,7 @@ class CreateEventTests(TestCase):
         self.assertEqual(response.data["organizer"], {"id": self.user.id, "username": "alice"})
 
     def test_spoofed_organizer_field_is_ignored(self):
-        other = User.objects.create_user(email="bob@example.com", username="bob", password="x")
+        other = UserFactory(email="bob@example.com", username="bob")
         self.client.force_authenticate(user=self.user)
         response = self.client.post(
             EVENTS_URL,

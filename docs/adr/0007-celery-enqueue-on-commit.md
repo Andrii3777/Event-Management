@@ -1,31 +1,20 @@
-# 0007. Постановка Celery-задачи строго в transaction.on_commit
+# 0007. Enqueue Celery Tasks Strictly via transaction.on_commit
 
-## Контекст
+## Context
 
-Запись на событие создаётся внутри атомарной транзакции сервисного слоя (см. ADR-0006). Требуется
-поставить задачу отправки письма в очередь после успешной записи, но брокер (Redis) и воркер
-работают в отдельном процессе от Django и ничего не знают о состоянии транзакции.
+Event registration creates a database record within an atomic database transaction (ADR-0006). An asynchronous confirmation email must be enqueued via Celery and Redis upon successful registration. However, Celery workers operate in a separate process and cannot observe uncommitted database state.
 
-## Решение
+## Decision
 
-`send_registration_email.delay(user_id, event_id)` вызывается не сразу после сохранения записи, а
-из колбэка `transaction.on_commit`, поставленного внутри той же транзакции, что и создание
-`EventRegistration`.
+The Celery email notification task (`send_join_confirmation_email.delay(user_id, event_id)`) is enqueued exclusively inside a `transaction.on_commit` callback within the registration service.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «вызвать `.delay()` сразу после `save()`» — при быстром брокере в докер-сети
-воркер способен забрать задачу и прочитать пользователя и событие из базы раньше, чем транзакция
-Django реально закоммитится, а при откате транзакции (например, из-за `IntegrityError` от гонки,
-см. ADR-0002) письмо всё равно ушло бы про запись, которой никогда не было в базе.
-`transaction.on_commit` гарантирует, что задача ставится в очередь только если коммит
-действительно состоялся.
+- Calling `.delay()` immediately after `registration.save()` within an active transaction exposes the system to race conditions: the worker may attempt to fetch the user or event from the database before the transaction has committed.
+- Furthermore, if the transaction later rolls back (due to a database constraint violation or unexpected error), calling `.delay()` directly would cause notification emails to be sent for registrations that never occurred.
+- `transaction.on_commit` guarantees the task is published to Redis only after the database transaction has successfully committed.
 
-## Последствия
+## Consequences
 
-Этот путь нельзя протестировать обычным `TestCase` — нужна фикстура
-`django_capture_on_commit_callbacks`, иначе колбэк никогда не выполнится внутри тестовой
-транзакции и тест ничего не покажет. Любой будущий код, ставящий задачи из того же сервиса,
-обязан помнить про `on_commit`: обычный вызов `.delay()` внутри транзакции для новой фичи будет
-тем же классом бага, просто в другом месте, и это не проверяется автоматически — только code
-review и явным правилом в README.
+- Unit tests asserting task scheduling must execute within `django_capture_on_commit_callbacks` or call the underlying function with commit hooks activated.
+- As a rule across all background workers, only primitive IDs (`user_id`, `event_id`) are passed as task parameters rather than pickled Django model instances.

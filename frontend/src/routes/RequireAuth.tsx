@@ -4,8 +4,8 @@ import { LoadingState } from "../components/LoadingState";
 import { useMe } from "../features/auth/hooks";
 
 // Wraps protected routes: anonymous visitors are sent to /login and, after
-// logging in, back to the page they came from (R126).
-export function RequireAuth() {
+// logging in, back to the page they came from.
+export function RequireAuth({ children }: { children?: React.ReactNode }) {
   const location = useLocation();
   const { data: user, isLoading, isError } = useMe();
 
@@ -17,5 +17,5 @@ export function RequireAuth() {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  return children ? <>{children}</> : <Outlet />;
 }

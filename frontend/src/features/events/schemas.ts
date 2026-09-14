@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // `originalDate` lets an already-past event's untouched date pass through on
-// edit (G02.1: editing a past event without changing its date must succeed)
+// edit (editing a past event without changing its date must succeed)
 // while still rejecting anyone typing in a new past date.
 export function createEventSchema(originalDate?: string) {
   return z.object({

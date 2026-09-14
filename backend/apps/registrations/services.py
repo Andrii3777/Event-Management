@@ -1,17 +1,22 @@
+from typing import TYPE_CHECKING
+
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from .exceptions import AlreadyRegistered, EventAlreadyPast, NotRegistered
+from .exceptions import AlreadyJoined, EventAlreadyPast, NotJoined
 from .models import EventRegistration
-from .tasks import send_registration_email
+from .tasks import send_join_confirmation_email
+
+if TYPE_CHECKING:
+    from apps.events.models import Event
+    from apps.users.models import User
 
 
-def register_user_for_event(user, event):
-    """Create the registration and schedule the confirmation email.
+def join_event(user: "User", event: "Event") -> EventRegistration:
+    """Create the event participation and schedule the confirmation email.
 
-    The uniqueness check is the database constraint itself, not a prior
-    `.exists()` query: that is the only way it stays correct under two
-    concurrent requests (spec §3, R54).
+    The uniqueness check is enforced by the database constraint itself,
+    preventing race conditions under concurrent requests.
     """
     if event.date <= timezone.now():
         raise EventAlreadyPast()
@@ -19,16 +24,19 @@ def register_user_for_event(user, event):
     try:
         with transaction.atomic():
             registration = EventRegistration.objects.create(user=user, event=event)
-            # Only schedule the email once this transaction is durably committed,
-            # so a rolled-back registration never sends one (spec §9, R108).
-            transaction.on_commit(lambda: send_registration_email.delay(user.id, event.id))
+            transaction.on_commit(lambda: send_join_confirmation_email.delay(user.pk, event.pk))
     except IntegrityError:
-        raise AlreadyRegistered() from None
+        raise AlreadyJoined() from None
 
     return registration
 
 
-def cancel_registration(user, event):
+def leave_event(user: "User", event: "Event") -> None:
     deleted, _ = EventRegistration.objects.filter(user=user, event=event).delete()
     if not deleted:
-        raise NotRegistered()
+        raise NotJoined()
+
+
+register_user_for_event = join_event
+cancel_registration = leave_event
+send_registration_email = send_join_confirmation_email

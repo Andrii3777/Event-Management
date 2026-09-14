@@ -7,8 +7,10 @@ export interface Event {
   date: string;
   location: string;
   organizer: Pick<User, "id" | "username">;
-  registrations_count: number;
-  is_registered: boolean;
+  participants_count: number;
+  is_joined: boolean;
+  registrations_count?: number;
+  is_registered?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -27,7 +29,9 @@ export interface EventListParams {
   date_before?: string;
   ordering?: string;
   page?: string;
+  page_size?: string;
   organizer?: string;
+  joined?: string;
   registered?: string;
 }
 

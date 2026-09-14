@@ -22,7 +22,10 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: development
+    command: python manage.py runserver 0.0.0.0:8000
     env_file:
       - .env
     depends_on:
@@ -33,10 +36,19 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./backend:/app
       - static_volume:/app/staticfiles
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/').getcode() == 200 or exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   celery-worker:
-    build: ./backend
+    build:
+      context: ./backend
+      target: development
     entrypoint: []
     command: celery -A config worker -l info
     env_file:
@@ -46,13 +58,23 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./backend:/app
 
   frontend:
-    build: ./frontend
-    depends_on:
-      - backend
+    build:
+      context: ./frontend
+      target: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "3000:80"
+      - "3000:3000"
+    environment:
+      - VITE_BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:

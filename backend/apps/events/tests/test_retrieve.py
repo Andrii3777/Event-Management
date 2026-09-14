@@ -1,28 +1,13 @@
-from datetime import timedelta
-
-from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.events.models import Event
-
-User = get_user_model()
+from apps.events.tests.factories import EventFactory
 
 
 class RetrieveEventTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.organizer = User.objects.create_user(
-            email="alice@example.com", username="alice", password="x"
-        )
-        self.event = Event.objects.create(
-            title="Meetup",
-            description="desc",
-            date=timezone.now() + timedelta(days=1),
-            location="Kyiv",
-            organizer=self.organizer,
-        )
+        self.event = EventFactory(title="Meetup")
 
     def test_retrieve_existing_event(self):
         response = self.client.get(f"/api/v1/events/{self.event.id}/")

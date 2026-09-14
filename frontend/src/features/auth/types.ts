@@ -13,10 +13,13 @@ export interface LoginResponse {
   user: User;
 }
 
-export interface RegisterRequest {
+export interface SignUpRequest {
   email: string;
   username: string;
   password: string;
 }
 
-export type RegisterResponse = User;
+export type SignUpResponse = User;
+
+export type RegisterRequest = SignUpRequest;
+export type RegisterResponse = SignUpResponse;

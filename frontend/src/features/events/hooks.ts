@@ -1,12 +1,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  cancelRegistration,
   createEvent,
   deleteEvent,
   fetchEvent,
   fetchEvents,
-  registerForEvent,
+  joinEvent,
+  leaveEvent,
   updateEvent,
 } from "./api";
 import type { EventListParams, EventWritePayload } from "./types";
@@ -30,9 +30,9 @@ export function useEvent(id: number | string) {
   });
 }
 
-// Every mutation below changes either the list (registrations_count,
-// is_registered) or a single event — invalidating the "events" prefix covers
-// both list and detail queries at once (R122).
+// Every mutation below changes either the list (participants_count,
+// is_joined) or a single event — invalidating the "events" prefix covers
+// both list and detail queries at once.
 function useInvalidateEvents() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: ["events"] });
@@ -62,18 +62,21 @@ export function useDeleteEvent() {
   });
 }
 
-export function useRegister() {
+export function useJoinEvent() {
   const invalidate = useInvalidateEvents();
   return useMutation({
-    mutationFn: (id: number | string) => registerForEvent(id),
+    mutationFn: (id: number | string) => joinEvent(id),
     onSuccess: invalidate,
   });
 }
 
-export function useCancelRegistration() {
+export function useLeaveEvent() {
   const invalidate = useInvalidateEvents();
   return useMutation({
-    mutationFn: (id: number | string) => cancelRegistration(id),
+    mutationFn: (id: number | string) => leaveEvent(id),
     onSuccess: invalidate,
   });
 }
+
+export const useRegister = useJoinEvent;
+export const useCancelRegistration = useLeaveEvent;

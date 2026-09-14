@@ -1,13 +1,15 @@
 import { api } from "../../api/client";
-import type { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User } from "./types";
+import type { LoginRequest, LoginResponse, SignUpRequest, SignUpResponse, User } from "./types";
 
 export function login(payload: LoginRequest) {
   return api.post<LoginResponse>("/auth/token/", payload).then((res) => res.data);
 }
 
-export function registerUser(payload: RegisterRequest) {
-  return api.post<RegisterResponse>("/auth/register/", payload).then((res) => res.data);
+export function signUpUser(payload: SignUpRequest) {
+  return api.post<SignUpResponse>("/auth/signup/", payload).then((res) => res.data);
 }
+
+export const registerUser = signUpUser;
 
 export function logout() {
   return api.post("/auth/logout/").then(() => undefined);

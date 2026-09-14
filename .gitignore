@@ -1,12 +1,40 @@
+# Environment variables
 .env
 .env.*
 !.env.example
+
+# Node / Frontend
 node_modules/
-__pycache__/
-*.py[cod]
-.venv/
 dist/
 build/
-.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+.idea/
+
+# Reference materials
+references/
+
+# AI Assistants & Local Agent metadata
+.ai-radar/
+.claude/
+CLAUDE.md
+brief.md
+.cursor/
+.windsurf/

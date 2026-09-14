@@ -19,27 +19,33 @@ User = get_user_model()
     retry_backoff=True,
     max_retries=3,
 )
-def send_registration_email(user_id: int, event_id: int) -> None:
-    """Plain-text confirmation email. Takes ids, not model instances (spec §9):
-    by the time the worker runs, the objects may already be gone or changed.
-    """
+def send_join_confirmation_email(user_id: int, event_id: int) -> None:
+    """Plain-text confirmation email. Takes IDs to avoid stale model instances."""
     try:
         user = User.objects.get(pk=user_id)
         event = Event.objects.get(pk=event_id)
     except (User.DoesNotExist, Event.DoesNotExist):
         logger.warning(
-            "Skipping registration email: user_id=%s event_id=%s no longer exists",
+            "Skipping join confirmation email: user_id=%s event_id=%s no longer exists",
             user_id,
             event_id,
         )
         return
 
+    user_email = getattr(user, "email", None)
+    if not user_email:
+        logger.warning("Skipping join confirmation email: user_id=%s has no email", user_id)
+        return
+
     local_date = timezone.localtime(event.date)
-    subject = f"You are registered for {event.title}"
+    subject = f"You joined {event.title}"
     message = (
-        f"You are registered for {event.title}.\n"
+        f"You have joined {event.title}.\n"
         f"Date: {local_date.strftime('%Y-%m-%d %H:%M')}\n"
         f"Location: {event.location}\n\n"
-        "This confirms your registration."
+        "This confirms your participation."
     )
-    send_mail(subject, message, None, [user.email])
+    send_mail(subject, message, None, [user_email])
+
+
+send_registration_email = send_join_confirmation_email

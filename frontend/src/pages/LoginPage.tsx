@@ -1,9 +1,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { Button } from "../components/Button";
+import {
+  CloseIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LockIcon,
+  MailIcon,
+  UserIcon,
+  WaveGraphic,
+} from "../components/icons";
 import { Input } from "../components/Input";
+import { Modal } from "../components/Modal";
 import { useLogin } from "../features/auth/hooks";
 import { loginSchema, type LoginFormValues } from "../features/auth/schemas";
 import { applyServerFieldErrors } from "../features/shared/formErrors";
@@ -16,6 +27,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -26,14 +38,16 @@ export function LoginPage() {
 
   const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? "/events";
 
+  const handleClose = () => {
+    navigate("/events");
+  };
+
   const onSubmit = handleSubmit((values) => {
     login.mutate(values, {
       onSuccess: () => navigate(redirectTo, { replace: true }),
       onError: (error) => {
         const handled = applyServerFieldErrors(error, setError, ["email", "password"] as const);
         if (!handled) {
-          // DRF replies 401 with the same message regardless of which part
-          // of the credentials was wrong (R13.1) — surface it on the form.
           setError("password", { message: "Incorrect email or password." });
         }
       },
@@ -41,26 +55,97 @@ export function LoginPage() {
   });
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="text-xl font-semibold text-gray-900">Log in</h1>
-      <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4" noValidate>
-        <Input label="Email" type="email" error={errors.email?.message} {...register("email")} />
-        <Input
-          label="Password"
-          type="password"
-          error={errors.password?.message}
-          {...register("password")}
-        />
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Log in"}
-        </Button>
-      </form>
-      <p className="mt-4 text-sm text-gray-600">
-        No account?{" "}
-        <Link to="/register" className="font-medium text-blue-600 hover:text-blue-800">
-          Register
-        </Link>
-      </p>
-    </div>
+    <Modal isOpen={true} onClose={handleClose} ariaLabelledBy="login-title">
+      <div className="relative my-8 w-full max-w-md overflow-hidden rounded-3xl border border-white/80 bg-white/95 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl modal-content-animate">
+        {/* Close Button */}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="absolute right-4 top-4 z-20 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-slate-100/80 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label="Close"
+        >
+          <CloseIcon className="h-4 w-4" />
+        </button>
+
+        {/* Ambient Top Icon with Floating Orbs */}
+        <div className="relative z-10 mx-auto mb-5 flex h-16 w-16 items-center justify-center">
+          <div className="absolute -left-2 -top-1 h-5 w-5 rounded-full bg-blue-200/50 blur-xs" />
+          <div className="absolute -right-1 bottom-1 h-6 w-6 rounded-full bg-sky-200/60 blur-xs" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50/90 text-blue-600 ring-1 ring-blue-500/20 shadow-2xs backdrop-blur-xs">
+            <UserIcon className="h-7 w-7" />
+          </div>
+        </div>
+
+        {/* Title & Subtitle */}
+        <div className="relative z-10 text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            Log in
+          </h1>
+          <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
+            Welcome back! Glad to see you again.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={onSubmit} className="relative z-10 flex flex-col gap-4" noValidate>
+          <Input
+            label="Email"
+            type="email"
+            placeholder="Enter your email"
+            leftIcon={<MailIcon className="h-4 w-4" />}
+            error={errors.email?.message}
+            {...register("email")}
+          />
+
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            leftIcon={<LockIcon className="h-4 w-4" />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="hover:text-slate-600 transition-colors focus:outline-none p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-4 w-4" />
+                ) : (
+                  <EyeIcon className="h-4 w-4" />
+                )}
+              </button>
+            }
+            error={errors.password?.message}
+            {...register("password")}
+          />
+
+          <Button
+            type="submit"
+            size="lg"
+            disabled={isSubmitting}
+            className="w-full mt-2 min-h-[44px]"
+          >
+            {isSubmitting ? "Logging in..." : "Log in"}
+          </Button>
+        </form>
+
+        {/* Footer Link */}
+        <p className="relative z-10 mt-6 text-center text-xs text-slate-500">
+          No account?{" "}
+          <Link
+            to="/signup"
+            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Sign Up
+          </Link>
+        </p>
+
+        {/* Bottom Wave Graphic */}
+        <WaveGraphic />
+      </div>
+    </Modal>
   );
 }
+

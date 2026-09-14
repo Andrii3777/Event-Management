@@ -17,16 +17,12 @@ export function primeCsrf() {
   return api.get("/auth/csrf/");
 }
 
-function isUrl(url: string | undefined, suffix: string) {
-  return !!url && url.includes(suffix);
-}
-
-// Requests whose own 401 is a normal, expected response — not a sign the
-// session died mid-use — and must never trigger a refresh attempt: login
-// and register report bad credentials/validation via their own 401/400,
-// and refresh must never try to refresh itself.
+// Any endpoint under /auth/ (login, signup, refresh, me, csrf, logout) must never
+// trigger a refresh attempt: 401s from these endpoints are either expected
+// (anonymous on /auth/me/) or terminal (bad credentials on /auth/token/).
 function skipsRefresh(url: string | undefined) {
-  return isUrl(url, "/auth/token/refresh/") || isUrl(url, "/auth/token/") || isUrl(url, "/auth/register/");
+  if (!url) return true;
+  return url.includes("/auth/");
 }
 
 // Single-flight refresh: concurrent 401s share one in-flight request instead
@@ -56,11 +52,14 @@ api.interceptors.response.use(
     try {
       await refreshSession();
     } catch {
-      queryClient.clear();
-      // A 401 on /auth/me/ just means "not logged in" (anonymous is a valid
-      // state on public pages) — only a mid-session failure elsewhere should
-      // force a hard redirect.
-      if (!isUrl(config.url, "/auth/me/")) {
+      // Mark session as expired without destroying cached business data or triggering refetch storms
+      queryClient.setQueryData(["me"], null);
+
+      if (
+        typeof window !== "undefined" &&
+        window.location.pathname !== "/login" &&
+        window.location.pathname !== "/signup"
+      ) {
         window.location.assign("/login");
       }
       throw error;

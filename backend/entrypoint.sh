@@ -1,7 +1,12 @@
 #!/bin/sh
 set -e
 
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
+# Fix permissions on staticfiles volume if mounted with root/different UID
+chown -R appuser:appgroup /app/staticfiles 2>/dev/null || true
 
-exec "$@"
+# Run migrations and collectstatic as unprivileged appuser
+gosu appuser python manage.py migrate --noinput
+gosu appuser python manage.py collectstatic --noinput
+
+# Drop root privileges and execute process as appuser
+exec gosu appuser "$@"

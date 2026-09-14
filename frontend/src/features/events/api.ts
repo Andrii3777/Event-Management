@@ -30,10 +30,13 @@ export function deleteEvent(id: number | string) {
   return api.delete(`/events/${id}/`).then(() => undefined);
 }
 
-export function registerForEvent(id: number | string) {
-  return api.post(`/events/${id}/register/`).then(() => undefined);
+export function joinEvent(id: number | string) {
+  return api.post(`/events/${id}/join/`).then(() => undefined);
 }
 
-export function cancelRegistration(id: number | string) {
-  return api.delete(`/events/${id}/register/`).then(() => undefined);
+export function leaveEvent(id: number | string) {
+  return api.delete(`/events/${id}/leave/`).then(() => undefined);
 }
+
+export const registerForEvent = joinEvent;
+export const cancelRegistration = leaveEvent;

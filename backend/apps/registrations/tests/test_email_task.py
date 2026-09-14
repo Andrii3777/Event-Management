@@ -28,21 +28,18 @@ class RegistrationEmailSchedulingTests(TestCase):
         )
 
     def test_delay_called_with_two_ints_after_commit(self):
-        with mock.patch("apps.registrations.services.send_registration_email.delay") as delay:
+        with mock.patch("apps.registrations.services.send_join_confirmation_email.delay") as delay:
             with self.captureOnCommitCallbacks(execute=True):
-                registration = services.register_user_for_event(self.user, self.event)
+                registration = services.join_event(self.user, self.event)
             delay.assert_called_once_with(self.user.id, self.event.id)
             self.assertEqual(registration.event_id, self.event.id)
 
     def test_delay_not_called_when_transaction_rolls_back(self):
-        # Calls the real service, not a hand-rolled create/on_commit — a
-        # regression that moves on_commit out of register_user_for_event
-        # must fail this test.
-        with mock.patch("apps.registrations.services.send_registration_email.delay") as delay:
+        with mock.patch("apps.registrations.services.send_join_confirmation_email.delay") as delay:
             with self.captureOnCommitCallbacks(execute=True):
                 with self.assertRaises(RuntimeError):
                     with transaction.atomic():
-                        services.register_user_for_event(self.user, self.event)
+                        services.join_event(self.user, self.event)
                         raise RuntimeError("simulated failure after registration")
             delay.assert_not_called()
             self.assertFalse(

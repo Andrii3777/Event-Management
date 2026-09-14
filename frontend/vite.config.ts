@@ -5,10 +5,22 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Only relevant for `npm run dev` outside Docker: keeps the frontend
-    // and API on one origin so auth cookies work (see spec §14).
+    host: "0.0.0.0",
+    port: 3000,
+    watch: {
+      usePolling: true,
+      interval: 800,
+      ignored: ["**/node_modules/**", "**/.git/**", "**/dist/**"],
+    },
+    hmr: {
+      clientPort: 3000,
+    },
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": {
+        target: process.env.VITE_BACKEND_URL || "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
   },
 });
+

@@ -62,11 +62,12 @@ class Command(BaseCommand):
         now = timezone.now()
         events = []
         for spec in DEMO_EVENTS:
+            days = int(str(spec["days_offset"]))
             event, _ = Event.objects.get_or_create(
                 title=spec["title"],
                 defaults={
                     "description": f"Demo event in {spec['location']}.",
-                    "date": now + timedelta(days=spec["days_offset"]),
+                    "date": now + timedelta(days=days),
                     "location": spec["location"],
                     "organizer": organizer,
                 },

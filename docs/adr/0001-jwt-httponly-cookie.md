@@ -1,34 +1,22 @@
-# 0001. JWT в HttpOnly cookie вместо localStorage
+# 0001. JWT in HttpOnly Cookies instead of localStorage
 
-## Контекст
+## Context
 
-Бриф требует, чтобы access- и refresh-токены хранились в HttpOnly + Secure cookie, а
-JavaScript фронтенда не мог их прочитать напрямую (запрет localStorage/sessionStorage).
-SimpleJWT из коробки достаёт токен из заголовка `Authorization`, а не из cookie.
+Security requirements dictate that access and refresh tokens must be stored in `HttpOnly` cookies so that client-side JavaScript cannot access them directly, preventing token theft via Cross-Site Scripting (XSS). By default, `djangorestframework-simplejwt` expects tokens in the `Authorization` request header rather than HTTP cookies.
 
-## Решение
+## Decision
 
-Access- и refresh-токены выдаются и читаются исключительно через HttpOnly cookie
-(`access_token`, `refresh_token` с разными `Path`), а не через тело ответа и не через
-`localStorage`/`sessionStorage`. Для этого написан `CookieJWTAuthentication`, оборачивающий
-`JWTAuthentication` SimpleJWT.
+Access and refresh tokens are issued and validated exclusively via `HttpOnly` cookies (`access_token` and `refresh_token` with distinct `Path` attributes), rather than in response bodies or `localStorage`/`sessionStorage`. A custom authentication backend, `CookieJWTAuthentication`, wraps SimpleJWT's `JWTAuthentication` to extract the JWT from incoming cookies.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «токен в теле ответа, фронтенд сам кладёт его в `localStorage`» — это прямое
-приглашение украсть токен через XSS, то есть ровно то, что запрещает требование бонусной
-безопасности. Отвергнут вариант `SameSite=None` для cookie — он требует `Secure=True` даже на
-localhost по HTTP и открывает cookie кросс-сайтовым запросам без необходимости; вместо этого
-выбрана схема одного origin через nginx (см. ADR-0004) и `SameSite=Lax`. Готовый
-`SessionAuthentication` не подошёл, потому что он завязан на серверную сессию Django, а не на
-JWT с ротацией и blacklist.
+- Storing tokens in the response body for storage in `localStorage` was rejected because it exposes credentials to any malicious script executed in the browser (XSS).
+- Using `SameSite=None` for cookies was rejected because it mandates `Secure=True` even on localhost HTTP and exposes cookies to cross-site requests. Instead, a single-origin architecture via Nginx (see ADR-0004) with `SameSite=Lax` was chosen.
+- Django's built-in `SessionAuthentication` was rejected because the architecture specifically targets stateless JWT with token rotation and blacklisting rather than server-side session tables.
 
-## Последствия
+## Consequences
 
-Каждый небезопасный запрос требует ручной CSRF-проверки поверх cookie-аутентификации — это
-дополнительный код и дополнительный класс тестов, которых не было бы при токене в заголовке.
-Access- и refresh-cookie имеют разные `Path` и разное время жизни, и это состояние нужно
-поддерживать синхронно при логине, рефреше и логауте. Тестировать API вручную через Postman или
-curl без предварительной установки cookie и заголовка `X-CSRFToken` невозможно. Фронтенд обязан
-реализовать single-flight refresh с очередью ожидающих запросов — без этого несколько
-параллельных 401 порождают гонку из нескольких refresh-запросов одновременно.
+- Every unsafe state-changing request (POST, PUT, PATCH, DELETE) requires explicit CSRF validation on top of cookie authentication (`csrftoken` cookie with `X-CSRFToken` header).
+- Access and refresh cookies use different paths (`/` vs `/api/v1/auth/`) and lifetimes, requiring synchronized handling during login, refresh, and logout.
+- Testing the API manually via Postman or cURL requires capturing cookies and supplying the `X-CSRFToken` header.
+- The frontend client must implement a single-flight refresh mechanism with a queue for pending requests to prevent concurrent 401 responses from triggering multiple simultaneous refresh requests.

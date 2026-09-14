@@ -1,31 +1,20 @@
-# 0003. Кастомная модель пользователя с email как логином
+# 0003. Custom User Model with Email Login
 
-## Контекст
+## Context
 
-Django не поддерживает замену `AUTH_USER_MODEL` после первой миграции без болезненного переноса
-данных и внешних ключей. Отдельно в брифинге решено, что логином служит email, а не username, при
-этом ответы API показывают организатора по `username`.
+Django does not support replacing `AUTH_USER_MODEL` after the initial migration without high-friction data and foreign key migrations. The specification requires authentication via email rather than username, while public API responses display the event organizer by `username`.
 
-## Решение
+## Decision
 
-С первой миграции используется кастомная модель `User(AbstractUser)` с уникальным `email` в
-качестве `USERNAME_FIELD`; `username` остаётся обязательным полем (`REQUIRED_FIELDS`) для
-отображения.
+A custom user model, `User(AbstractUser)`, is introduced in the initial migration. It configures `USERNAME_FIELD = "email"` while retaining `username` as a required field (`REQUIRED_FIELDS = ["username"]`) for display purposes.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «начать со стандартного `auth.User` и ввести кастомную модель позже, если
-понадобится» — это ровно тот путь, который дорого отменить: замена `AUTH_USER_MODEL` после
-первой миграции требует переноса всех внешних ключей на пользователя и данных вручную, а не
-правки одной настройки. Отвергнут и вариант «email как единственное поле идентичности, без
-отдельного username» — пример ответа API по событию показывает организатора именно по
-`username`, значит поле нужно для отображения независимо от того, что не участвует в
-аутентификации.
+- Starting with Django's built-in `auth.User` with the plan of switching later was rejected: altering `AUTH_USER_MODEL` on an active database requires manual migration of foreign keys and data tables. Setting up a custom model on day one is standard Django best practice.
+- Relying on `email` as the sole identity field without a separate `username` was rejected because public API contracts and UI designs display event organizers by username, which separates private login credentials from public identity.
 
-## Последствия
+## Consequences
 
-Каждая связь с пользователем в проекте (`Event.organizer`, `EventRegistration.user`) с первого
-дня опирается на кастомную модель, и любой сторонний пакет, ожидающий `django.contrib.auth.User`
-по умолчанию, требует проверки совместимости перед подключением. Валидация регистрации обязана
-поддерживать два независимых поля идентичности (email для входа, username для отображения)
-синхронно, включая отдельные сообщения об ошибке уникальности для каждого.
+- All foreign keys referencing users (`Event.organizer`, `EventRegistration.user`) explicitly reference `settings.AUTH_USER_MODEL`.
+- Third-party packages must remain compatible with custom user models.
+- Registration validation validates both identity fields (unique email for login, unique username for display) and yields independent validation error messages for each.

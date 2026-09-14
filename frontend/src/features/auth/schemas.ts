@@ -9,10 +9,13 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
-export const registerSchema = z.object({
+export const signUpSchema = z.object({
   email: emailSchema,
   username: z.string().min(1, "Username is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type SignUpFormValues = z.infer<typeof signUpSchema>;
+
+export const registerSchema = signUpSchema;
+export type RegisterFormValues = SignUpFormValues;

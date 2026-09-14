@@ -8,3 +8,6 @@ class EventRegistrationSerializer(serializers.ModelSerializer):
         model = EventRegistration
         fields = ["id", "event", "user", "created_at"]
         read_only_fields = fields
+
+
+EventParticipantSerializer = EventRegistrationSerializer

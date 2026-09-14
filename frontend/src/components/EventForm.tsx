@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { createEventSchema, type EventFormValues } from "../features/events/schemas";
 import { applyServerFieldErrors } from "../features/shared/formErrors";
 import { Button } from "./Button";
+import { CalendarIcon, MapPinIcon, SparklesIcon } from "./icons";
 import { Input } from "./Input";
 import { Textarea } from "./Textarea";
 
@@ -41,23 +42,53 @@ export function EventForm({ defaultValues, submitLabel, onSubmit }: EventFormPro
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      <Input label="Title" error={errors.title?.message} {...register("title")} />
-      <Textarea label="Description" rows={4} error={errors.description?.message} {...register("description")} />
+      <Input
+        label="Title"
+        placeholder="Event title"
+        rightIcon={<SparklesIcon className="h-4 w-4 text-blue-400/80" />}
+        error={errors.title?.message}
+        {...register("title")}
+      />
+
+      <Textarea
+        label="Description"
+        placeholder="Event description"
+        rows={4}
+        error={errors.description?.message}
+        {...register("description")}
+      />
+
       <Input
         label="Date and time"
         type="datetime-local"
+        leftIcon={<CalendarIcon className="h-4 w-4" />}
         error={errors.date?.message}
         {...register("date")}
       />
-      <Input label="Location" error={errors.location?.message} {...register("location")} />
+
+      <Input
+        label="Location"
+        placeholder="City"
+        leftIcon={<MapPinIcon className="h-4 w-4" />}
+        error={errors.location?.message}
+        {...register("location")}
+      />
+
       {formError && (
-        <p className="text-sm text-red-600" role="alert">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-600" role="alert">
           {formError}
-        </p>
+        </div>
       )}
-      <Button type="submit" disabled={isSubmitting}>
+
+      <Button
+        type="submit"
+        size="lg"
+        disabled={isSubmitting}
+        className="w-full mt-2"
+      >
         {isSubmitting ? "Saving..." : submitLabel}
       </Button>
     </form>
   );
 }
+

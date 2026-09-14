@@ -7,7 +7,7 @@ import { EventCard } from "../../components/EventCard";
 import { LoadingState } from "../../components/LoadingState";
 import { Pagination } from "../../components/Pagination";
 import { useEvents } from "./hooks";
-import type { EventListParams } from "./types";
+import type { Event, EventListParams } from "./types";
 
 interface EventsListProps {
   params: EventListParams;
@@ -15,39 +15,86 @@ interface EventsListProps {
   onPageChange: (page: number) => void;
   emptyMessage: string;
   onResetFilters?: () => void;
+  renderCardAction?: (event: Event) => ReactNode;
 }
 
-// The single place list rendering (loading/error/empty/grid/pagination) lives
-// — EventsPage and MyEventsPage both render this with a different `params`,
-// rather than duplicating the list (history 61/§8).
-export function EventsList({ params, page, onPageChange, emptyMessage, onResetFilters }: EventsListProps) {
-  const { data, isLoading, isError, refetch } = useEvents({ ...params, page: String(page) });
+const PAGE_SIZE = 9;
+
+export function EventsList({
+  params,
+  page,
+  onPageChange,
+  emptyMessage,
+  onResetFilters,
+  renderCardAction,
+}: EventsListProps) {
+  const { data, isLoading, isError, refetch } = useEvents({
+    page_size: String(PAGE_SIZE),
+    ...params,
+    page: String(page),
+  });
 
   if (isLoading) {
-    return <LoadingState label="Loading events..." />;
+    return (
+      <div className="flex-1 flex flex-col justify-between min-h-0">
+        <LoadingState count={9} />
+        <div className="mt-auto pt-1 sm:pt-1.5 shrink-0 invisible pointer-events-none">
+          <Pagination
+            page={1}
+            totalPages={1}
+            hasPrevious={false}
+            hasNext={false}
+            onPageChange={() => {}}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (isError) {
-    return <ErrorState message="Could not load events." onRetry={() => refetch()} />;
+    return (
+      <div className="flex-1 flex flex-col justify-center items-center min-h-0">
+        <ErrorState message="Could not load events." onRetry={() => refetch()} />
+      </div>
+    );
   }
 
   if (!data || data.results.length === 0) {
     const resetAction: ReactNode = onResetFilters ? (
-      <Button variant="secondary" onClick={onResetFilters}>
+      <Button variant="secondary" size="sm" onClick={onResetFilters}>
         Reset filters
       </Button>
     ) : undefined;
-    return <EmptyState message={emptyMessage} action={resetAction} />;
+    return (
+      <div className="flex-1 flex flex-col justify-center items-center min-h-0">
+        <EmptyState message={emptyMessage} action={resetAction} />
+      </div>
+    );
   }
 
+  const totalPages = Math.ceil(data.count / PAGE_SIZE);
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="flex-1 flex flex-col justify-between min-h-0">
+      <div className="grid grid-cols-1 gap-2 sm:gap-2.5 md:grid-cols-2 lg:grid-cols-3">
         {data.results.map((event) => (
-          <EventCard key={event.id} event={event} />
+          <EventCard
+            key={event.id}
+            event={event}
+            action={renderCardAction ? renderCardAction(event) : undefined}
+          />
         ))}
       </div>
-      <Pagination page={page} hasPrevious={!!data.previous} hasNext={!!data.next} onPageChange={onPageChange} />
+      <div className="mt-auto pt-1 sm:pt-1.5 shrink-0">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          hasPrevious={!!data.previous}
+          hasNext={!!data.next}
+          onPageChange={onPageChange}
+        />
+      </div>
     </div>
   );
 }
+

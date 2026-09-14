@@ -1,10 +1,10 @@
 from rest_framework.exceptions import APIException, NotFound
 
 
-class AlreadyRegistered(APIException):
+class AlreadyJoined(APIException):
     status_code = 409
-    default_detail = "You are already registered for this event."
-    default_code = "already_registered"
+    default_detail = "You have already joined this event."
+    default_code = "already_joined"
 
 
 class EventAlreadyPast(APIException):
@@ -13,6 +13,10 @@ class EventAlreadyPast(APIException):
     default_code = "event_already_past"
 
 
-class NotRegistered(NotFound):
-    default_detail = "You are not registered for this event."
-    default_code = "not_registered"
+class NotJoined(NotFound):
+    default_detail = "You have not joined this event."
+    default_code = "not_joined"
+
+
+AlreadyRegistered = AlreadyJoined
+NotRegistered = NotJoined

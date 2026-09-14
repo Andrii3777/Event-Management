@@ -1,36 +1,28 @@
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.events.models import Event
+from apps.events.tests.factories import EventFactory
+from apps.users.tests.factories import UserFactory
 
 from .helpers import future
-
-User = get_user_model()
 
 
 class UpdateEventTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.organizer = User.objects.create_user(
-            email="alice@example.com", username="alice", password="x"
-        )
-        self.other = User.objects.create_user(email="bob@example.com", username="bob", password="x")
-        self.future_event = Event.objects.create(
+        self.organizer = UserFactory(email="alice@example.com", username="alice")
+        self.other = UserFactory(email="bob@example.com", username="bob")
+        self.future_event = EventFactory(
             title="Meetup",
-            description="desc",
             date=future(1),
-            location="Kyiv",
             organizer=self.organizer,
         )
-        self.past_event = Event.objects.create(
+        self.past_event = EventFactory(
             title="Old Meetup",
-            description="desc",
             date=timezone.now() - timedelta(days=1),
-            location="Kyiv",
             organizer=self.organizer,
         )
 

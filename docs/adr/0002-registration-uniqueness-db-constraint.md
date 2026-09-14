@@ -1,28 +1,20 @@
-# 0002. Уникальность записи на уровне базы, а не только в коде
+# 0002. Registration Uniqueness via Database Constraint
 
-## Контекст
+## Context
 
-Требование запрещает повторную запись пользователя на одно и то же событие и явно просит не
-полагаться на проверку гонкой двух одновременных запросов — обход должен быть невозможен даже в
-обход сервисного слоя.
+The domain requirements prohibit duplicate registrations of a user for the same event and mandate robustness against race conditions from concurrent requests, ensuring duplicates are prevented even if the service layer is bypassed.
 
-## Решение
+## Decision
 
-Уникальность пары `(user, event)` в `EventRegistration` гарантируется `UniqueConstraint` в
-таблице базы данных, а не только проверкой `exists()` в сервисе перед созданием записи.
+Uniqueness of the `(user, event)` tuple in `EventRegistration` is strictly guaranteed by a database-level `UniqueConstraint` on the table, in addition to an application-level `exists()` check in the registration service.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «проверка `exists()` в сервисе как единственная защита» — она не закрывает
-гонку двух параллельных запросов: оба запроса могут пройти проверку `exists()` до того, как
-любой из них закоммитит свою запись, и в базе окажутся два дубля. Проверка в сервисе не убрана
-полностью — она осталась как быстрый путь, дающий понятный 409 без обращения к исключению базы;
-constraint — последний рубеж на случай, если сервис обойдён напрямую через ORM.
+- Relying solely on an application-level `exists()` check was rejected because it does not prevent race conditions: two simultaneous requests could both pass the `exists()` query before either commits its row, resulting in duplicate database records.
+- The service-level check is retained as a fast path that provides a clean 409 Conflict without triggering a database transaction rollback. The DB constraint serves as the definitive safeguard against race conditions or direct ORM operations.
 
-## Последствия
+## Consequences
 
-Код сервиса обязан ловить `IntegrityError` от нарушения constraint и превращать его в 409
-(`AlreadyRegistered`), иначе гонка двух запросов отдаёт клиенту 500 вместо конфликта. Миграция с
-этим constraint — часть схемы, которую нельзя откатить или пропустить без потери защиты от
-дублей; тест, создающий дубль в обход сервиса напрямую через ORM, обязателен и должен остаться в
-наборе тестов постоянно, иначе регресс не будет замечен.
+- The registration service must catch `IntegrityError` resulting from a constraint violation and translate it into an HTTP 409 Conflict (`AlreadyRegistered` exception) so concurrent requests return a conflict response instead of an unexpected 500 internal server error.
+- The database migration establishing this constraint is a critical part of the schema and must not be altered or omitted.
+- An automated test verifying that duplicate registrations fail at the database level when bypassing the service layer is maintained in the test suite.

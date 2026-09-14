@@ -1,34 +1,83 @@
-import { Link } from "react-router-dom";
+import type { ReactNode } from "react";
+import { Link, useLocation } from "react-router-dom";
 
-import { useMe } from "../features/auth/hooks";
 import type { Event } from "../features/events/types";
-import { RegistrationButton } from "./RegistrationButton";
+import { ChevronRightIcon, MapPinIcon, UsersIcon } from "./icons";
 
 interface EventCardProps {
   event: Event;
+  action?: ReactNode;
 }
 
-// Shows registrations_count/is_registered straight from the event payload —
-// no per-card request (R95/history 36). Register/cancel are mutations, not
-// fetches, so this holds even with the button wired up.
-export function EventCard({ event }: EventCardProps) {
-  const { data: user } = useMe();
+export function EventCard({ event, action }: EventCardProps) {
+  const location = useLocation();
+  const basePath = location.pathname.startsWith("/my-events") ? "/my-events" : "/events";
+  const count = event.participants_count ?? event.registrations_count ?? 0;
+
+  const dateObj = new Date(event.date);
+  const isValidDate = !isNaN(dateObj.getTime());
+  const month = isValidDate
+    ? dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase()
+    : "EVT";
+  const day = isValidDate ? String(dateObj.getDate()).padStart(2, "0") : "--";
+  const year = isValidDate ? dateObj.getFullYear() : "";
+
+  const eventTarget = {
+    pathname: `${basePath}/${event.id}`,
+    search: location.search,
+  };
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div>
-        <Link to={`/events/${event.id}`} className="text-lg font-semibold text-gray-900 hover:text-blue-700">
-          {event.title}
-        </Link>
-        <p className="mt-1 text-sm text-gray-600">
-          {new Date(event.date).toLocaleString()} · {event.location}
-        </p>
+    <div className="group relative flex flex-col justify-between rounded-2xl border border-white/80 bg-white/75 p-2.5 sm:p-3 shadow-xs backdrop-blur-md transition-all duration-300 ease-out hover:bg-white/95 hover:border-blue-200/60 hover:shadow-md hover:shadow-slate-900/5 min-w-0">
+      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+        {/* Date badge - compact, elegant anchor */}
+        <div className="flex min-w-[50px] sm:min-w-[54px] shrink-0 flex-col items-center justify-center rounded-xl border border-blue-100/80 bg-blue-50/85 px-2 py-1.5 text-center text-blue-600 transition-colors duration-300 group-hover:border-blue-200 group-hover:bg-blue-50">
+          <span className="text-[10px] font-extrabold tracking-wider">{month}</span>
+          <span className="my-0.5 text-lg sm:text-xl font-black leading-none">{day}</span>
+          <span className="text-[9px] font-semibold opacity-75">{year}</span>
+        </div>
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <Link
+            to={eventTarget}
+            className="block text-xs sm:text-sm font-bold leading-snug text-slate-900 transition-colors duration-200 group-hover:text-blue-600 line-clamp-1 break-words"
+            title={event.title}
+          >
+            {event.title}
+          </Link>
+
+          <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 min-w-0">
+            <MapPinIcon className="h-3 w-3 shrink-0 text-slate-400" />
+            <span className="truncate">{event.location || "Location TBA"}</span>
+          </div>
+
+          <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 leading-snug break-words">
+            {event.description || "No description provided."}
+          </p>
+        </div>
       </div>
-      <p className="line-clamp-3 text-sm text-gray-600">{event.description}</p>
-      <div className="mt-auto flex items-center justify-between gap-2">
-        <span className="text-sm text-gray-500">{event.registrations_count} registered</span>
-        <RegistrationButton event={event} user={user} />
+
+      {/* Footer / Meta */}
+      <div className="mt-2 flex items-center justify-between border-t border-slate-100/80 pt-1.5 gap-2">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 shrink-0">
+          <UsersIcon className="h-3 w-3 text-slate-400" />
+          <span>{count} joined</span>
+        </div>
+
+        {action ? (
+          <div className="shrink-0">{action}</div>
+        ) : (
+          <Link
+            to={eventTarget}
+            className="flex h-6.5 w-6.5 min-h-[26px] min-w-[26px] shrink-0 items-center justify-center rounded-full bg-blue-50/80 text-blue-600 transition-all duration-200 group-hover:bg-blue-100 group-hover:text-blue-700 group-hover:translate-x-0.5 hover:!bg-blue-600 hover:!text-white"
+            aria-label={`View details for ${event.title}`}
+          >
+            <ChevronRightIcon className="h-3.5 w-3.5" />
+          </Link>
+        )}
       </div>
     </div>
   );
 }
+

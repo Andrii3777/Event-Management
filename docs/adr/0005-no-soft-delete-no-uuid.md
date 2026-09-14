@@ -1,29 +1,19 @@
-# 0005. Отказ от soft delete и UUID первичных ключей
+# 0005. Standard Integer Primary Keys and Cascade Deletion (No Soft Delete, No UUIDs)
 
-## Контекст
+## Context
 
-Требование прямо запрещает soft delete и просит не вводить UUID без конкретной причины. У
-события есть зависимые записи (`EventRegistration`), которые нужно куда-то деть при удалении
-события.
+The requirements favor simplicity and discourage introducing premature complexity like soft-deletion or UUIDs without concrete domain requirements. When an `Event` is deleted, its associated `EventRegistration` records must be handled cleanly.
 
-## Решение
+## Decision
 
-`Event` и `EventRegistration` используют обычные автоинкрементные первичные ключи. Удаление
-события каскадно удаляет его записи (`on_delete=CASCADE`); в базе не остаётся ни флага
-`is_deleted`, ни истории удалённых строк.
+`Event` and `EventRegistration` models utilize standard auto-incrementing integer primary keys. Deletion of an event cascades to its registrations (`on_delete=models.CASCADE`). Neither `is_deleted` flags nor soft-deletion tables are introduced.
 
-## Почему
+## Rationale
 
-Отвергнут вариант «soft delete через `is_deleted` и фильтрацию во всех queryset» — он требует
-переопределять менеджер по умолчанию везде, где событие читается, вводит риск случайно показать
-«удалённое» событие через забытый queryset и прямо запрещён требованием. Отвергнут вариант «UUID
-первичные ключи для непредсказуемости ID» — в задаче нет требования скрывать порядковые номера
-и нет сценария генерации ID несколькими независимыми источниками без обращения к базе, то есть
-единственная типичная причина вводить UUID здесь отсутствует.
+- Soft-delete patterns (e.g., `is_deleted` flags with custom QuerySet managers) introduce pervasive complexity into queryset filtering and can inadvertently expose logically deleted records through unmanaged queries.
+- UUID primary keys increase index sizes and database overhead, with no requirement in this project for client-generated IDs or distributed ID generation. Standard sequential IDs are clean, performant, and fit the domain.
 
-## Последствия
+## Consequences
 
-Удаление события — необратимая операция, безвозвратно уносящая все записи на него; это
-осознанно задокументированное в README поведение, а не забытый край. Автоинкрементные ID
-последовательны и предсказуемы, что в теории позволяет перебор `/events/{id}/` — это принято как
-приемлемый компромисс, поскольку список событий и так публичен и не содержит закрытых данных.
+- Event deletion is permanent and immediately cascades to related registrations.
+- Sequential IDs are human-readable and standard in URL paths (`/api/v1/events/1/`).

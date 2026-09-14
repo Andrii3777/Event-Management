@@ -3,14 +3,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters as drf_filters
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.common.schema import error_detail_serializer
-from apps.registrations.models import EventRegistration
-from apps.registrations.serializers import EventRegistrationSerializer
-from apps.registrations.services import cancel_registration, register_user_for_event
 
 from .filters import EventFilter
 from .models import Event
@@ -48,7 +44,7 @@ _error_response = error_detail_serializer("EventErrorDetail")
     destroy=extend_schema(responses={204: None, 403: _error_response, 404: _error_response}),
 )
 class EventViewSet(viewsets.ModelViewSet):
-    # No PUT (spec §6): PATCH covers every write scenario the frontend needs.
+    # PATCH covers partial updates; PUT is not needed.
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     pagination_class = EventPagination
     filter_backends = [DjangoFilterBackend, drf_filters.SearchFilter, drf_filters.OrderingFilter]
@@ -58,17 +54,20 @@ class EventViewSet(viewsets.ModelViewSet):
     ordering = ["date"]
 
     def get_queryset(self):
-        # Single-query annotations (spec §6, D01): a per-row query for either
-        # field would undo the N+1 guarantee list/retrieve already give (R95).
+        # Annotations prevent N+1 queries on list and retrieve endpoints.
         user = self.request.user
+        is_joined: Exists | Value
         if user.is_authenticated:
-            is_registered = Exists(
-                EventRegistration.objects.filter(event=OuterRef("pk"), user=user)
+            is_joined = Exists(
+                Event.objects.filter(pk=OuterRef("pk"), registrations__user=user)
             )
         else:
-            is_registered = Value(False, output_field=BooleanField())
+            is_joined = Value(False, output_field=BooleanField())
         return Event.objects.select_related("organizer").annotate(
-            registrations_count=Count("registrations"), is_registered=is_registered
+            participants_count=Count("registrations"),
+            is_joined=is_joined,
+            registrations_count=Count("registrations"),
+            is_registered=is_joined,
         )
 
     def get_serializer_class(self):
@@ -77,7 +76,7 @@ class EventViewSet(viewsets.ModelViewSet):
         return EventSerializer
 
     def get_permissions(self):
-        if self.action in ("create", "register"):
+        if self.action == "create":
             return [IsAuthenticated()]
         if self.action in ("update", "partial_update", "destroy"):
             return [IsAuthenticated(), IsOrganizerOrReadOnly()]
@@ -101,8 +100,11 @@ class EventViewSet(viewsets.ModelViewSet):
         # carries no annotations — fill in the values a fresh event always
         # has instead of paying for an extra query.
         instance = write_serializer.instance
-        instance.registrations_count = 0
-        instance.is_registered = False
+        if instance is not None:
+            instance.participants_count = 0
+            instance.is_joined = False
+            instance.registrations_count = 0
+            instance.is_registered = False
         data = self._read_data_for(write_serializer)
         headers = self.get_success_headers(data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
@@ -114,30 +116,3 @@ class EventViewSet(viewsets.ModelViewSet):
         write_serializer.is_valid(raise_exception=True)
         self.perform_update(write_serializer)
         return Response(self._read_data_for(write_serializer))
-
-    @extend_schema(
-        methods=["POST"],
-        request=None,
-        responses={
-            201: EventRegistrationSerializer,
-            400: _error_response,
-            401: _error_response,
-            404: _error_response,
-            409: _error_response,
-        },
-    )
-    @extend_schema(
-        methods=["DELETE"],
-        responses={204: None, 401: _error_response, 404: _error_response},
-    )
-    @action(detail=True, methods=["post", "delete"], url_path="register")
-    def register(self, request, pk=None):
-        # HTTP only: all registration/cancellation rules live in
-        # apps.registrations.services (spec §6, R83).
-        event = self.get_object()
-        if request.method == "POST":
-            registration = register_user_for_event(request.user, event)
-            serializer = EventRegistrationSerializer(registration)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        cancel_registration(request.user, event)
-        return Response(status=status.HTTP_204_NO_CONTENT)
