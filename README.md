@@ -734,6 +734,8 @@ docker compose up -d --build
 ```
 
 > **Note:** Upon backend container startup, `entrypoint.sh` automatically runs database migrations (`migrate`) and collects static files (`collectstatic`).
+>
+> 🌐 **Web App URL:** Open **[http://localhost:3000](http://localhost:3000)** in your browser once the containers are running.
 
 ### 3. Seed Demo Data
 
@@ -787,6 +789,12 @@ docker compose down -v
 # Navigate to backend directory
 cd backend
 
+# Configure environment variables (Django reads .env from project root or backend dir):
+cp ../.env.example ../.env
+# Ensure your ../.env points to your local services:
+# POSTGRES_HOST=localhost
+# REDIS_URL=redis://localhost:6379/0
+
 # Create and activate a virtual environment
 python -m venv .venv
 # On Linux/macOS:
@@ -794,17 +802,13 @@ source .venv/bin/activate
 # On Windows (PowerShell):
 .venv\Scripts\Activate.ps1
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (requirements-dev.txt includes core packages via -r requirements.txt)
 pip install -r requirements-dev.txt
 
-# Configure .env in the project root:
-# Set POSTGRES_HOST=localhost and REDIS_URL=redis://localhost:6379/0
-
-# Apply migrations
+# Apply database migrations
 python manage.py migrate
 
-# Seed demo data
+# Seed demo data (2 users, 15 events)
 python manage.py seed_demo
 
 # Start the Django development server (Port 8000)
@@ -816,7 +820,12 @@ python manage.py runserver 0.0.0.0:8000
 ```bash
 cd backend
 source .venv/bin/activate  # or .venv\Scripts\Activate.ps1
+
+# On Linux / macOS:
 celery -A config worker -l info
+
+# On Windows (PowerShell / CMD — solo pool is required due to Windows process model):
+celery -A config worker -l info -P solo
 ```
 
 ---
