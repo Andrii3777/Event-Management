@@ -18,7 +18,7 @@ interface EventsListProps {
   renderCardAction?: (event: Event) => ReactNode;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 9;
 
 export function EventsList({
   params,
@@ -37,7 +37,7 @@ export function EventsList({
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col justify-between min-h-0">
-        <LoadingState count={12} />
+        <LoadingState count={9} />
         <div className="mt-auto pt-1 sm:pt-1.5 shrink-0 invisible pointer-events-none">
           <Pagination
             page={1}
@@ -75,17 +75,19 @@ export function EventsList({
   const totalPages = Math.ceil((data.count || 0) / PAGE_SIZE);
 
   return (
-    <div className="flex-1 flex flex-col justify-between min-h-0">
-      <div className="grid grid-cols-1 gap-2 sm:gap-2.5 md:grid-cols-2 lg:grid-cols-3">
-        {data.results.map((event) => (
-          <EventCard
-            key={event.id}
-            event={event}
-            action={renderCardAction ? renderCardAction(event) : undefined}
-          />
-        ))}
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1">
+        <div className="grid grid-cols-1 gap-2 sm:gap-2.5 md:grid-cols-2 lg:grid-cols-3">
+          {data.results.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              action={renderCardAction ? renderCardAction(event) : undefined}
+            />
+          ))}
+        </div>
       </div>
-      <div className="mt-auto pt-1 sm:pt-1.5 shrink-0">
+      <div className="mt-auto pt-2 sm:pt-3 shrink-0">
         <Pagination
           page={page}
           totalPages={totalPages}

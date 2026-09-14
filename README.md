@@ -267,6 +267,16 @@ Standard Django REST Framework responses:
 
 ---
 
+### Testing Authenticated Endpoints in Swagger UI
+
+Because the API uses secure **HttpOnly cookies**, you do not need to manually copy or paste a `Bearer` token into a Swagger "Authorize" button.
+
+1. **Log in**: Execute the `POST /api/v1/auth/token/` endpoint with your credentials (e.g. `alice@demo.local` / `demo12345`). The browser will automatically save the returned cookies.
+2. **Test GET requests**: You can now execute any protected GET endpoint (e.g. `GET /api/v1/auth/me/`), and the browser will attach the authentication cookies automatically.
+3. **POST / PATCH / DELETE**: Modifying state requires a CSRF token (`X-CSRFToken` header). Since standard Swagger UI cannot automatically read the `csrftoken` cookie to set this header, testing these requests natively in Swagger may result in a `CSRF Failed` error. For full end-to-end testing of mutations, it is recommended to use the React Frontend or Postman.
+
+---
+
 ### Auth Module
 
 #### 1. Sign Up (Register)
