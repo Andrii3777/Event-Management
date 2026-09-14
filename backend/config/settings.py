@@ -249,6 +249,7 @@ CELERY_TASK_ALWAYS_EAGER = env(
 )
 
 RESEND_API_KEY = env("RESEND_API_KEY", default="")
+BREVO_API_KEY = env("BREVO_API_KEY", default="")
 
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env("EMAIL_PORT", default=587, cast=int)
@@ -264,7 +265,9 @@ DEFAULT_FROM_EMAIL = env(
         else (EMAIL_HOST_USER or "noreply@eventmanagement.local")
     ),
 )
-if RESEND_API_KEY:
+if BREVO_API_KEY:
+    EMAIL_BACKEND = "apps.common.email_backends.BrevoEmailBackend"
+elif RESEND_API_KEY:
     EMAIL_BACKEND = "apps.common.email_backends.ResendEmailBackend"
 elif EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
