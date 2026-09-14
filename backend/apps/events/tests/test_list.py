@@ -35,12 +35,12 @@ class ListEventTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data.keys()), {"count", "next", "previous", "results"})
         self.assertEqual(response.data["count"], 15)
-        self.assertEqual(len(response.data["results"]), 9)  # default page_size (3x3 grid)
+        self.assertEqual(len(response.data["results"]), 12)  # default page_size (highly divisible grid)
 
     def test_second_page_returns_remaining_events(self):
         response = self.client.get(EVENTS_URL, {"page": 2})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data["results"]), 6)
+        self.assertEqual(len(response.data["results"]), 3)
 
     def test_ordering_ascending_by_date(self):
         response = self.client.get(EVENTS_URL, {"ordering": "date", "page_size": 100})

@@ -34,7 +34,13 @@ export function LoginPage() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "alice@demo.local",
+      password: "demo12345",
+    },
+  });
 
   const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? "/events";
 
