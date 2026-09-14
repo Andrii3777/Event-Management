@@ -39,7 +39,16 @@ function refreshSession() {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const contentType = String(response.headers["content-type"] || "");
+    if (
+      typeof response.data === "string" &&
+      (contentType.includes("text/html") || response.data.trim().startsWith("<!doctype") || response.data.trim().startsWith("<html"))
+    ) {
+      return Promise.reject(new Error("API returned HTML instead of JSON. Backend service may not be running."));
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetriableConfig | undefined;
     const status = error.response?.status;

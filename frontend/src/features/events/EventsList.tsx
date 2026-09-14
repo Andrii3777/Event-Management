@@ -51,7 +51,7 @@ export function EventsList({
     );
   }
 
-  if (isError) {
+  if (isError || !data || !Array.isArray(data?.results)) {
     return (
       <div className="flex-1 flex flex-col justify-center items-center min-h-0">
         <ErrorState message="Could not load events." onRetry={() => refetch()} />
@@ -59,7 +59,7 @@ export function EventsList({
     );
   }
 
-  if (!data || data.results.length === 0) {
+  if (data.results.length === 0) {
     const resetAction: ReactNode = onResetFilters ? (
       <Button variant="secondary" size="sm" onClick={onResetFilters}>
         Reset filters
@@ -72,7 +72,7 @@ export function EventsList({
     );
   }
 
-  const totalPages = Math.ceil(data.count / PAGE_SIZE);
+  const totalPages = Math.ceil((data.count || 0) / PAGE_SIZE);
 
   return (
     <div className="flex-1 flex flex-col justify-between min-h-0">
