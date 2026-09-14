@@ -39,6 +39,11 @@ def env(name, default=None, cast=str):
     return cast(value)
 
 
+env.bool = lambda name, default=False: env(name, default=default, cast=bool)
+env.int = lambda name, default=0: env(name, default=default, cast=int)
+env.list = lambda name, default=None: env(name, default=default or [], cast=list)
+
+
 DEBUG = env("DEBUG", default=True, cast=bool)
 SECRET_KEY = env(
     "SECRET_KEY",
@@ -237,17 +242,18 @@ CSRF_COOKIE_SECURE = COOKIE_SECURE
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://redis:6379/0")
 CELERY_TASK_IGNORE_RESULT = True
 # Fallback to synchronous task execution when no external broker is configured
-CELERY_TASK_ALWAYS_EAGER = env.bool(
+CELERY_TASK_ALWAYS_EAGER = env(
     "CELERY_TASK_ALWAYS_EAGER",
     default=(not env("REDIS_URL", default="")),
+    cast=bool,
 )
 
 EMAIL_HOST = env("EMAIL_HOST", default="")
 EMAIL_PORT = env("EMAIL_PORT", default=587, cast=int)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+EMAIL_USE_TLS = env("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = env("EMAIL_USE_SSL", default=False, cast=bool)
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default=EMAIL_HOST_USER or "noreply@eventmanagement.local",
