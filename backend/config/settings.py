@@ -39,9 +39,10 @@ def env(name, default=None, cast=str):
     return cast(value)
 
 
-env.bool = lambda name, default=False: env(name, default=default, cast=bool)
-env.int = lambda name, default=0: env(name, default=default, cast=int)
-env.list = lambda name, default=None: env(name, default=default or [], cast=list)
+# MyPy doesn't like adding attributes to functions, and we don't use these anyway.
+# env.bool = lambda name, default=False: env(name, default=default, cast=bool)
+# env.int = lambda name, default=0: env(name, default=default, cast=int)
+# env.list = lambda name, default=None: env(name, default=default or [], cast=list)
 
 
 DEBUG = env("DEBUG", default=True, cast=bool)

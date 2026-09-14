@@ -3,6 +3,8 @@ import logging
 import urllib.error
 import urllib.request
 
+from collections.abc import Sequence
+
 from django.conf import settings
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.message import EmailMessage
@@ -22,7 +24,7 @@ class ResendEmailBackend(BaseEmailBackend):
         super().__init__(fail_silently=fail_silently, **kwargs)
         self.api_key = api_key or getattr(settings, "RESEND_API_KEY", "")
 
-    def send_messages(self, email_messages: list[EmailMessage]) -> int:
+    def send_messages(self, email_messages: Sequence[EmailMessage]) -> int:
         if not email_messages or not self.api_key:
             return 0
 
@@ -89,7 +91,7 @@ class BrevoEmailBackend(BaseEmailBackend):
         super().__init__(fail_silently=fail_silently, **kwargs)
         self.api_key = api_key or getattr(settings, "BREVO_API_KEY", "")
 
-    def send_messages(self, email_messages: list[EmailMessage]) -> int:
+    def send_messages(self, email_messages: Sequence[EmailMessage]) -> int:
         if not email_messages or not self.api_key:
             return 0
 
@@ -120,7 +122,7 @@ class BrevoEmailBackend(BaseEmailBackend):
 
         data = json.dumps(payload).encode("utf-8")
         headers = {
-            "api-key": self.api_key,
+            "api-key": str(self.api_key),
             "Content-Type": "application/json",
             "Accept": "application/json",
             "User-Agent": "EventManagement-Django/1.0",

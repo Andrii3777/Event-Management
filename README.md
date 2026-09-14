@@ -6,8 +6,8 @@
 
 ## Live Demo
 
-- **Live Application**: [https://event-management-bice-five.vercel.app](https://event-management-bice-five.vercel.app)
-- **Interactive API Docs (Swagger UI)**: [https://event-management-bice-five.vercel.app/api/docs/](https://event-management-bice-five.vercel.app/api/docs/)
+- **Live Application**: [https://event-management-bice-five.vercel.app/events](https://event-management-bice-five.vercel.app/events)
+- **Interactive API Docs (Swagger UI)**: [https://event-backend-w942.onrender.com/api/docs/#/](https://event-backend-w942.onrender.com/api/docs/#/)
 - **Backend API Service**: [https://event-backend-w942.onrender.com](https://event-backend-w942.onrender.com)
 
 #### Demo Accounts

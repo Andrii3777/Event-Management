@@ -18,7 +18,7 @@ interface EventsListProps {
   renderCardAction?: (event: Event) => ReactNode;
 }
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 12;
 
 export function EventsList({
   params,
@@ -37,7 +37,7 @@ export function EventsList({
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col justify-between min-h-0">
-        <LoadingState count={9} />
+        <LoadingState count={12} />
         <div className="mt-auto pt-1 sm:pt-1.5 shrink-0 invisible pointer-events-none">
           <Pagination
             page={1}
