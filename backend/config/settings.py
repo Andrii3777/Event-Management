@@ -137,6 +137,19 @@ DATABASES = {
     }
 }
 
+if DATABASE_URL:
+    from urllib.parse import unquote, urlparse
+
+    _db_url = urlparse(DATABASE_URL)
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": _db_url.path.lstrip("/"),
+        "USER": unquote(_db_url.username or ""),
+        "PASSWORD": unquote(_db_url.password or ""),
+        "HOST": _db_url.hostname or "",
+        "PORT": str(_db_url.port or 5432),
+    }
+
 # If running tests locally on host machine (outside Docker) where 'postgres' hostname
 # is unresolvable, fallback to SQLite in-memory so developers can run pytest instantly.
 if (

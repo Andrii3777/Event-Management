@@ -18,7 +18,7 @@ RUN mkdir -p /app/staticfiles && chown -R appuser:appgroup /app/staticfiles && c
 
 EXPOSE 8000
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["sh", "-c", "gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}"]
 
 # Stage 2: Development & testing (inherits production, adds pytest, ruff, etc.)
 FROM production AS development
